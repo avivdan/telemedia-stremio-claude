@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "id": "tgchat:-1001251653717",
+    "type": "series",
+    "name": "Telemedia · Kids channel",
+    "description": "Telegram chat Kids channel",
+    "videos": [
+      {
+        "id": "tg:-1001251653717:4421",
+        "title": "Toy.Story.4.1080p",
+        "released": "2024-03-02T11:42:08.000Z",
+        "overview": "shared on Kids channel",
+        "season": 1,
+        "episode": 4421
+      },
+      {
+        "id": "tg:-1001251653717:4419",
+        "title": "Finding.Nemo.720p",
+        "released": "2024-03-01T09:07:19.000Z",
+        "overview": "",
+        "season": 1,
+        "episode": 4419
+      }
+    ]
+  }
+}

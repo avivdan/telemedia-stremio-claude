@@ -1,0 +1,25 @@
+{
+  "metas": [
+    {
+      "id": "tg:-1001106800100:54321",
+      "type": "movie",
+      "name": "Some.Movie.2023.1080p",
+      "description": "Posted on Hebrew Group · 2.1 GB",
+      "releaseInfo": "2024-08-12"
+    },
+    {
+      "id": "tg:-1001106800100:54287",
+      "type": "movie",
+      "name": "Another.Movie.720p.WEB",
+      "description": "Posted on Hebrew Group · 1.3 GB",
+      "releaseInfo": "2024-08-10"
+    },
+    {
+      "id": "tgchat:-1001251653717",
+      "type": "series",
+      "name": "Telemedia · Kids channel",
+      "description": "Telegram channel",
+      "poster": null
+    }
+  ]
+}

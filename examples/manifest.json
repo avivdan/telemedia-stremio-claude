@@ -1,0 +1,18 @@
+{
+  "id": "community.telemedia",
+  "version": "0.1.0",
+  "name": "Telemedia",
+  "description": "Stream videos from your Telegram chats (port of Kodi plugin.video.telemedia).",
+  "resources": ["catalog", "meta", "stream"],
+  "types": ["movie", "series"],
+  "idPrefixes": ["tg:", "tgchat:", "tmdb:", "tt"],
+  "catalogs": [
+    { "type": "movie",  "id": "telemedia-movies",     "name": "Telemedia · Movies",    "extra": [{"name":"search"},{"name":"skip"}] },
+    { "type": "series", "id": "telemedia-series",     "name": "Telemedia · TV Shows",  "extra": [{"name":"search"},{"name":"skip"}] },
+    { "type": "series", "id": "telemedia-my-groups",  "name": "Telemedia · My Groups", "extra": [] },
+    { "type": "movie",  "id": "telemedia-kids",       "name": "Telemedia · Kids",      "extra": [{"name":"search"}] },
+    { "type": "movie",  "id": "telemedia-hebrew",     "name": "Telemedia · Hebrew",    "extra": [{"name":"search"}] },
+    { "type": "movie",  "id": "telemedia-world",      "name": "Telemedia · World",     "extra": [{"name":"search"}] }
+  ],
+  "behaviorHints": { "configurable": false, "configurationRequired": false }
+}
