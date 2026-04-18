@@ -1,0 +1,14 @@
+{
+  "streams": [
+    {
+      "name": "Telemedia · 1080p",
+      "title": "Toy.Story.4.1080p.mkv\n1080p · 2148 MB",
+      "description": "Toy.Story.4.1080p.mkv (2148 MB, 1080p)",
+      "url": "http://127.0.0.1:7000/stream/-1001251653717/4421",
+      "behaviorHints": {
+        "notWebReady": true,
+        "bingeGroup": "tg:-1001251653717"
+      }
+    }
+  ]
+}
