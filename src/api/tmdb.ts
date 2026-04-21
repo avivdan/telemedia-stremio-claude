@@ -150,7 +150,10 @@ export async function tmdbTitles(id: number, type: 'movie' | 'tv'): Promise<stri
     url(`/${type}/${id}/translations`),
   );
   const names = new Set<string>();
+  // Only English + Hebrew. User's channels source those.
+  const allowed = new Set(['en', 'he', 'iw']);
   for (const tr of data.translations ?? []) {
+    if (!tr.iso_639_1 || !allowed.has(tr.iso_639_1)) continue;
     const n = tr.data?.title || tr.data?.name;
     if (n && n.trim()) names.add(n.trim());
   }

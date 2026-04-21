@@ -18,7 +18,7 @@ export function mediaToStream(media: TgMediaRef): StremioStream {
   const decoded = decodeFilename(media.fileName);
   const ext = (decoded.match(/\.[a-z0-9]{2,5}$/i)?.[0] ?? '.mp4').toLowerCase();
   const safeName = decoded.replace(/[\r\n]/g, ' ');
-  const url = `${config.server.publicBaseUrl}/stream/${encodeURIComponent(
+  const url = `${config.server.streamBaseUrl}/stream/${encodeURIComponent(
     media.chatId,
   )}/${media.messageId}/video${ext}`;
 

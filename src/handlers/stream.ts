@@ -69,13 +69,16 @@ async function collectTitles(
   kind: 'movie' | 'tv',
   fallback: string,
 ): Promise<string[]> {
+  const hasHebrew = (s: string) => /[\u0590-\u05FF]/.test(s);
+  const hasLatin = (s: string) => /[a-zA-Z]/.test(s);
+  const keep = (t: string) => !!t && t.trim().length > 0 && (hasHebrew(t) || hasLatin(t));
   try {
     const variants = await tmdb.tmdbTitles(tmdbId, kind);
     const all = new Set<string>([fallback, ...variants]);
-    return [...all].filter((t) => t && t.trim().length > 0);
+    return [...all].filter(keep);
   } catch (err) {
     log.warn('tmdbTitles failed', tmdbId, (err as Error).message);
-    return [fallback];
+    return [fallback].filter(keep);
   }
 }
 
@@ -91,17 +94,12 @@ async function searchByTitles(
   const hasHebrew = (s: string) => /[\u0590-\u05FF]/.test(s);
   const hasLatin = (s: string) => /[a-zA-Z]/.test(s);
 
-  // Sort titles by script priority: Hebrew first (user's actual source
-  // language), then Latin (English/Spanish/Portuguese/etc), then everything
-  // else. This matters because MAX_QUERIES will cut off the tail, and most
-  // users don't have Cyrillic/CJK/Arabic/Thai sources.
-  const scriptScore = (t: string): number => {
-    if (hasHebrew(t)) return 0;
-    if (hasLatin(t)) return 1;
-    return 2;
-  };
-  const sortedTitles = [...titles].sort(
-    (a, b) => scriptScore(a) - scriptScore(b),
+  // Keep only Hebrew and Latin titles. Drop Cyrillic/CJK/Arabic/Thai/etc —
+  // they waste MAX_QUERIES budget on sources the user doesn't have.
+  const kept = titles.filter((t) => hasHebrew(t) || hasLatin(t));
+  // Hebrew first (user's actual source language), Latin after.
+  const sortedTitles = [...kept].sort(
+    (a, b) => (hasHebrew(a) ? 0 : 1) - (hasHebrew(b) ? 0 : 1),
   );
 
   // Build a tier list per title. Hebrew titles get Hebrew-format tags as
