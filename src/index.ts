@@ -62,15 +62,9 @@ async function main() {
     log.info(
       `Telemedia addon listening on http://${config.server.host}:${config.server.port}`,
     );
-    // 0.0.0.0 is a bind-only address — print a URL the user can actually click.
-    const displayHost =
-      config.server.host === '0.0.0.0' ? '127.0.0.1' : config.server.host;
     log.info(
-      `Install in Stremio:  http://${displayHost}:${config.server.port}/manifest.json`,
+      `Install in Stremio:  ${config.server.publicBaseUrl.replace(/\/$/, '')}/manifest.json`,
     );
-    if (config.server.host === '0.0.0.0') {
-      log.info('LAN devices: use your PC\'s IP in place of 127.0.0.1');
-    }
   });
 }
 

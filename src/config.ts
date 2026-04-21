@@ -24,6 +24,7 @@ export const config = {
     host: opt('ADDON_HOST', '127.0.0.1'),
     port: num('ADDON_PORT', 7000),
     publicBaseUrl: opt('PUBLIC_BASE_URL', 'http://127.0.0.1:7000'),
+    streamBaseUrl: opt('STREAM_BASE_URL', process.env.PUBLIC_BASE_URL ?? 'http://127.0.0.1:7000'),
   },
   tmdb: {
     apiKey: opt('TMDB_API_KEY', '34142515d9d23817496eeb4ff1d223d0'),

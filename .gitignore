@@ -5,4 +5,4 @@ dist
 .session
 dev.log
 package-lock.json
-
+.claude

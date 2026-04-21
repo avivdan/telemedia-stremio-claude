@@ -79,7 +79,7 @@ export async function searchChatVideos(
   offsetId = 0,
 ): Promise<{ messages: Api.Message[]; lastId: number }> {
   const client = await getClient();
-  const peer = await client.getInputEntity(asEntityId(chatId));
+  const peer = await client.getInputEntity(String(chatId));
   const res = await client.invoke(
     new Api.messages.Search({
       peer,
@@ -92,7 +92,7 @@ export async function searchChatVideos(
       limit,
       maxId: 0,
       minId: 0,
-      hash: 0 as unknown as bigint,
+      hash: bigInt(0),
     }),
   );
   const messages = (res as Api.messages.MessagesSlice).messages as Api.Message[];
@@ -185,10 +185,10 @@ export async function fetchMessage(
   // Fall back to messages.GetMessages for regular groups/chats.
   let msg: Api.Message | undefined;
   try {
-    const peer = await client.getInputEntity(asEntityId(chatId));
+    const peer = await client.getInputEntity(String(chatId));
     const res = await client.invoke(
       new Api.channels.GetMessages({
-        channel: peer as Api.InputChannel,
+        channel: peer as unknown as Api.InputChannel,
         id: [new Api.InputMessageID({ id: messageId })],
       }),
     );
@@ -239,7 +239,7 @@ export async function* iterDownload(
 
   const iter = client.iterDownload({
     file: location,
-    offset: bigInt(alignedStart) as unknown as bigint,
+    offset: bigInt(alignedStart),
     limit: length + skip,
     requestSize: chunkBytes,
     dcId: media.dcId ?? doc.dcId,
@@ -262,15 +262,10 @@ export async function* iterDownload(
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------
-function asEntityId(id: string | bigint): bigint {
-  if (typeof id === 'bigint') return id;
-  return BigInt(id);
-}
-
 function getPeerId(peer: Api.TypePeer | undefined): string | number {
   if (!peer) return 0;
-  if (peer instanceof Api.PeerChannel) return String(-1000000000000n - BigInt(peer.channelId));
-  if (peer instanceof Api.PeerChat) return String(-BigInt(peer.chatId));
+  if (peer instanceof Api.PeerChannel) return String(-1000000000000n - BigInt(peer.channelId.toString()));
+  if (peer instanceof Api.PeerChat) return String(-BigInt(peer.chatId.toString()));
   if (peer instanceof Api.PeerUser) return String(peer.userId);
   return 0;
 }
