@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Telemedia</string>
+    <string name="api_id_hint">Telegram API ID</string>
+    <string name="api_hash_hint">Telegram API hash</string>
+    <string name="save">Save and start</string>
+    <string name="restart">Restart addon</string>
+    <string name="logout">Log out of Telegram</string>
+    <string name="password_hint">Two-step verification password</string>
+    <string name="send">Send</string>
+    <string name="qr_description">Telegram login QR code</string>
+    <string name="add_to_stremio">Open Stremio Add-ons</string>
+    <string name="open_stremio">Open Stremio</string>
+    <string name="get_stremio">Get Stremio</string>
+</resources>
