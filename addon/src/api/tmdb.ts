@@ -1,17 +1,20 @@
 // TMDB helpers — mirrors resources/modules/tmdb.py + the TMDB URLs scattered
 // around default.py (movies_menu / tv_show_menu / search_movies / search_tv).
 //
-// We only use TMDB for catalog/meta shaping. Streams always come from Telegram.
+// Optional: only used when TMDB_API_KEY is set (streaming-provider catalogs,
+// tmdb: ids, extra search titles). Streams always come from Telegram.
 
 import { http } from './client';
 import { config } from '../config';
 import { makeCache, cached } from '../utils/cache';
+import type { TitleInfo } from '../search/matching';
 import type { StremioMetaPreview } from '../types';
 
 const BASE = 'https://api.themoviedb.org/3';
 const IMG = 'https://image.tmdb.org/t/p';
 
 function url(path: string, params: Record<string, string | number> = {}) {
+  if (!config.tmdb.enabled) throw new Error('TMDB is disabled (TMDB_API_KEY not set)');
   const qs = new URLSearchParams({
     api_key: config.tmdb.apiKey,
     language: config.tmdb.language,
@@ -35,16 +38,6 @@ interface TmdbItem {
 
 interface TmdbList {
   results: TmdbItem[];
-}
-
-export async function popularMovies(page = 1): Promise<StremioMetaPreview[]> {
-  const data = await http.getJson<TmdbList>(url('/movie/popular', { page }));
-  return withImdbIds(data.results, 'movie');
-}
-
-export async function popularTv(page = 1): Promise<StremioMetaPreview[]> {
-  const data = await http.getJson<TmdbList>(url('/tv/popular', { page }));
-  return withImdbIds(data.results, 'series');
 }
 
 // TMDB `/discover` filtered by watch-provider. Region governs availability.
@@ -91,16 +84,6 @@ async function withImdbIds(
     if (imdb) p.id = imdb; // use IMDB id so Cinemeta handles meta
     return p;
   });
-}
-
-export async function searchTmdb(
-  query: string,
-  type: 'movie' | 'tv',
-): Promise<StremioMetaPreview[]> {
-  const data = await http.getJson<TmdbList>(
-    url(`/search/${type}`, { query, page: 1 }),
-  );
-  return withImdbIds(data.results, type === 'movie' ? 'movie' : 'series');
 }
 
 interface TmdbSeason {
@@ -154,15 +137,6 @@ interface TmdbTitleDetails {
   };
 }
 
-export interface TitleInfo {
-  // Official titles: localized primary, original, en/he translations.
-  titles: string[];
-  // TMDB alternative titles for IL/US/GB — how uploaders often actually name
-  // things (e.g. "השוטר הטירון" vs the official "הטירון").
-  altTitles: string[];
-  year?: number;
-}
-
 // Titles change rarely; stream lookups repeat constantly.
 const TITLE_TTL_MS = 24 * 60 * 60 * 1000;
 const titleInfoCache = makeCache<TitleInfo>(500, TITLE_TTL_MS);
@@ -171,7 +145,9 @@ const findCache = makeCache<{ type: 'movie' | 'series'; tmdbId: number }>(1000, 
 const TITLE_LANGS = new Set(['en', 'he', 'iw']); // user's channels source these
 const ALT_TITLE_COUNTRIES = ['IL', 'US', 'GB'];   // order = priority
 
-// Everything needed to search Telegram for an item, in one TMDB call.
+// Everything TMDB knows for searching Telegram, in one call: official titles
+// (localized, original, en/he translations) plus alternative titles for
+// IL/US/GB. Optional extra source — see api/titles.ts.
 export function tmdbTitleInfo(id: number, type: 'movie' | 'tv'): Promise<TitleInfo> {
   return cached(titleInfoCache, `${type}:${id}`, async () => {
     const d = await http.getJson<TmdbTitleDetails>(

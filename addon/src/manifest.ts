@@ -1,6 +1,9 @@
 // Stremio manifest. Catalogs mirror default.py's main_menu():
-//   Movies / TV Shows / My Groups / Kids / Hebrew / World
-// Plus per-provider discovery (Netflix/Prime/HBO/Disney+/Apple TV+).
+//   My Groups / Kids / Hebrew / World
+// Plus per-provider discovery (Netflix/Prime/HBO/Disney+/Apple TV+) when a
+// TMDB key is configured.
+
+import { config } from './config';
 
 // TMDB watch-provider ids. Same across regions but availability differs;
 // `watch_region` is set at query time (see src/api/tmdb.ts).
@@ -32,34 +35,36 @@ function providerCatalogs() {
   return out;
 }
 
+export const HEBREW_SEARCH_CATALOG = 'telemedia-he-search';
+
+const ownIdPrefixes = ['tg:', 'tgchat:', ...(config.tmdb.enabled ? ['tmdb:'] : [])];
+
 export const manifest = {
   id: 'community.telemedia',
-  version: '0.1.0',
+  version: '0.2.0',
   name: 'Telemedia',
   description:
     'Stream videos from your Telegram chats (port of Kodi plugin.video.telemedia).',
-  resources: ['catalog', 'meta', 'stream'],
+  // Meta only for our own ids — Cinemeta owns tt… details (names, episodes).
+  // Streams for both, including Cinemeta's tt… movies and episodes.
+  resources: [
+    'catalog',
+    { name: 'meta', types: ['movie', 'series'], idPrefixes: ownIdPrefixes },
+    { name: 'stream', types: ['movie', 'series'], idPrefixes: [...ownIdPrefixes, 'tt'] },
+  ],
   types: ['movie', 'series'],
-  idPrefixes: ['tg:', 'tgchat:', 'tmdb:', 'tt'],
+  idPrefixes: [...ownIdPrefixes, 'tt'],
+  // No generic Movies/TV catalogs: Stremio already shows Cinemeta's popular
+  // rows and its search, and we serve streams for those (tt…) ids.
   catalogs: [
-    {
-      type: 'movie',
-      id: 'telemedia-movies',
-      name: 'Movies - Telemedia',
-      extra: [
-        { name: 'search', isRequired: false },
-        { name: 'skip', isRequired: false },
-      ],
-    },
-    {
-      type: 'series',
-      id: 'telemedia-series',
-      name: 'TV Shows - Telemedia',
-      extra: [
-        { name: 'search', isRequired: false },
-        { name: 'skip', isRequired: false },
-      ],
-    },
+    // Hebrew titles in Stremio's search box (Cinemeta only knows English
+    // names). isRequired → shows in search results only, not on the board.
+    ...(['movie', 'series'] as const).map((type) => ({
+      type,
+      id: HEBREW_SEARCH_CATALOG,
+      name: 'חיפוש בעברית',
+      extra: [{ name: 'search', isRequired: true }],
+    })),
     {
       type: 'series',
       id: 'telemedia-my-groups',
@@ -85,8 +90,9 @@ export const manifest = {
       extra: [{ name: 'search', isRequired: false }],
     },
     // Streaming provider catalogs — TMDB `/discover` filtered by watch provider.
-    // Streams still come from Telegram (title-based search at stream time).
-    ...providerCatalogs(),
+    // Need a TMDB key (no keyless source for watch providers). Streams still
+    // come from Telegram (title-based search at stream time).
+    ...(config.tmdb.enabled ? providerCatalogs() : []),
   ],
   behaviorHints: {
     configurable: false,

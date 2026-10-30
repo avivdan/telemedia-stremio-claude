@@ -12,6 +12,8 @@
 import { Api } from 'telegram';
 import * as tg from '../api/telegram';
 import * as tmdb from '../api/tmdb';
+import { titleInfoForImdb } from '../api/titles';
+import { config } from '../config';
 import { decodeMsgId } from '../utils/ids';
 import { extractMedia } from '../api/telegram';
 import { mediaToStream } from '../mappers/streamMapper';
@@ -23,6 +25,7 @@ import {
   hasLatin,
   norm,
   rankStreams,
+  type TitleInfo,
 } from '../search/matching';
 import { makeCache } from '../utils/cache';
 import type { StremioStream, TgMediaRef } from '../types';
@@ -44,23 +47,20 @@ export async function streamHandler({ type, id }: StreamArgs) {
   }
 
   if (id.startsWith('tmdb:')) return { streams: await tmdbStreams(id) };
-  if (/^tt\d+/.test(id)) return { streams: await imdbStreams(id) };
+  if (/^tt\d+/.test(id)) return { streams: await imdbStreams(type, id) };
   return { streams: [] };
 }
 
-async function imdbStreams(id: string): Promise<StremioStream[]> {
+// Cinemeta ids: "tt1234567" (movie) or "tt1234567:2:5" (series S2E5).
+// Titles come from the keyless lookup in api/titles.ts.
+async function imdbStreams(type: string, id: string): Promise<StremioStream[]> {
   try {
-    // Stremio series stream ids look like "tt1234567:2:5" = season 2, episode 5.
     const [imdbId, seasonStr, episodeStr] = id.split(':');
     const season = seasonStr ? Number(seasonStr) : undefined;
     const episode = episodeStr ? Number(episodeStr) : undefined;
+    const kind = type === 'series' || season != null ? 'series' : 'movie';
 
-    const found = await tmdb.findByImdb(imdbId);
-    if (!found) {
-      log.warn('imdbStreams: no TMDB match for', imdbId);
-      return [];
-    }
-    const info = await tmdb.tmdbTitleInfo(found.tmdbId, found.type === 'movie' ? 'movie' : 'tv');
+    const info = await titleInfoForImdb(kind, imdbId);
     log.info('imdbStreams', { id, ...info, season, episode });
     return await searchByTitles(info, season, episode);
   } catch (err) {
@@ -70,7 +70,9 @@ async function imdbStreams(id: string): Promise<StremioStream[]> {
 }
 
 // Handles both `tmdb:movie:<id>` and `tmdb:series:<id>[:<season>:<episode>]`.
+// These ids only come from the TMDB provider catalogs (TMDB key set).
 async function tmdbStreams(id: string): Promise<StremioStream[]> {
+  if (!config.tmdb.enabled) return [];
   try {
     const parts = id.split(':');
     const kind = parts[1] === 'movie' ? 'movie' : 'tv';
@@ -115,7 +117,7 @@ const MAX_ALT_TITLES = 3;
 // Keep only Hebrew/Latin titles (the user's channels), dedupe by normalized
 // form, and drop alt titles that duplicate an official one or are too short
 // to match safely.
-function searchTitles(info: tmdb.TitleInfo): { main: string[]; alt: string[] } {
+function searchTitles(info: TitleInfo): { main: string[]; alt: string[] } {
   const keepScript = (t: string) => hasHebrew(t) || hasLatin(t);
   const uniq = (list: string[], seen: Set<string>) =>
     list.filter((t) => {
@@ -133,7 +135,7 @@ function searchTitles(info: tmdb.TitleInfo): { main: string[]; alt: string[] } {
 }
 
 async function searchByTitles(
-  info: tmdb.TitleInfo,
+  info: TitleInfo,
   season: number | undefined,
   episode: number | undefined,
 ): Promise<StremioStream[]> {

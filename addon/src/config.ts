@@ -26,9 +26,11 @@ export const config = {
     publicBaseUrl: opt('PUBLIC_BASE_URL', 'http://127.0.0.1:7000'),
     streamBaseUrl: opt('STREAM_BASE_URL', process.env.PUBLIC_BASE_URL ?? 'http://127.0.0.1:7000'),
   },
+  // Optional. Titles come from Cinemeta + Wikidata without any key; a TMDB
+  // key adds the streaming-provider catalogs and extra search titles.
   tmdb: {
     apiKey: opt('TMDB_API_KEY', ''),
-    imdbKey: opt('TMDB_IMDB_KEY', ''),
+    enabled: !!process.env.TMDB_API_KEY,
     language: opt('TMDB_LANGUAGE', 'he'),
   },
   chats: {

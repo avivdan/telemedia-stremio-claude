@@ -47,14 +47,16 @@ const prodPkg = {
 };
 writeFileSync(join(stage, 'package.json'), JSON.stringify(prodPkg, null, 2));
 
-// Defaults from the repo's .env (same source the desktop addon uses):
-//  - API ID/hash, so the TV skips the credentials form and goes straight to QR login
-//  - addon settings (TMDB keys, chat ids, ...) so the TV behaves like desktop.
+// Build-time defaults baked into the APK:
+//  - Telegram API ID/hash: identifies the *app* (Telegram expects each app to
+//    embed its own), so users only scan a QR code. For release builds set
+//    TELEGRAM_API_ID / TELEGRAM_API_HASH in the build environment (CI secret);
+//    local builds fall back to addon/.env.
+//  - optional addon settings (TMDB key, chat ids, ...), same precedence.
 // Deliberately NOT bundled: TELEGRAM_SESSION (each device logs in itself),
 // host/port/base URLs (TV always serves 127.0.0.1), STREAM_PREFETCH_KB (low RAM).
 const PASS_THROUGH_ENV = [
   'TMDB_API_KEY',
-  'TMDB_IMDB_KEY',
   'TMDB_LANGUAGE',
   'TG_KIDS_CHAT_ID',
   'TG_HEBREW_GROUP',
@@ -66,22 +68,26 @@ const PASS_THROUGH_ENV = [
   'LOG_LEVEL',
 ];
 const envPath = join(addonRoot, '.env');
-if (existsSync(envPath)) {
-  const env = Object.fromEntries(
-    readFileSync(envPath, 'utf8')
-      .split(/\r?\n/)
-      .map((l) => /^\s*([A-Z0-9_]+)\s*=\s*([^#\s]+)/.exec(l))
-      .filter(Boolean)
-      .map((m) => [m[1], m[2]]),
-  );
-  const defaults = {
-    apiId: env.TELEGRAM_API_ID,
-    apiHash: env.TELEGRAM_API_HASH,
-    env: Object.fromEntries(PASS_THROUGH_ENV.filter((k) => env[k]).map((k) => [k, env[k]])),
-  };
-  writeFileSync(join(stage, 'defaults.json'), JSON.stringify(defaults));
-  console.log(`Bundled defaults from .env: api id/hash + ${Object.keys(defaults.env).join(', ')}`);
-}
+const dotenv = existsSync(envPath)
+  ? Object.fromEntries(
+      readFileSync(envPath, 'utf8')
+        .split(/\r?\n/)
+        .map((l) => /^\s*([A-Z0-9_]+)\s*=\s*([^#\s]+)/.exec(l))
+        .filter(Boolean)
+        .map((m) => [m[1], m[2]]),
+    )
+  : {};
+const setting = (k) => process.env[k] || dotenv[k];
+const defaults = {
+  apiId: setting('TELEGRAM_API_ID'),
+  apiHash: setting('TELEGRAM_API_HASH'),
+  env: Object.fromEntries(PASS_THROUGH_ENV.filter((k) => setting(k)).map((k) => [k, setting(k)])),
+};
+writeFileSync(join(stage, 'defaults.json'), JSON.stringify(defaults));
+console.log(
+  `Bundled defaults: ${defaults.apiId ? 'Telegram API id/hash' : 'NO Telegram API id (app will ask)'}` +
+    (Object.keys(defaults.env).length ? ` + ${Object.keys(defaults.env).join(', ')}` : ''),
+);
 
 // --ignore-scripts: no native builds can run on device anyway; optional
 // native deps (bufferutil, utf-8-validate) fall back to pure JS.

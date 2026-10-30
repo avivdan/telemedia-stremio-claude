@@ -7,7 +7,9 @@ import {
   dedupeStreams,
   matchesEpisode,
   matchesTitle,
+  mergeTitleSources,
   parseQuality,
+  parseYear,
   rankStreams,
   yearMatch,
 } from '../src/search/matching';
@@ -63,9 +65,11 @@ test('title matching: no partial-word matches', () => {
 
 test('year matching ignores years inside the title', () => {
   assert.equal(yearMatch('Blade Runner 2049.mkv', 2017, ['Blade Runner 2049']), 'none');
-  assert.equal(yearMatch('Blade.Runner.2049.2017.1080p.mkv', 2017, ['Blade Runner 2049']), 'match');
+  assert.equal(yearMatch('Blade.Runner.2049.2017.1080p.mkv', 2017, ['Blade Runner 2049']), 'exact');
   assert.equal(yearMatch('Dune.1984.mkv', 2021, ['Dune']), 'conflict');
-  assert.equal(yearMatch('Dune.2022.mkv', 2021, ['Dune']), 'match'); // ±1 for regional dates
+  assert.equal(yearMatch('Dune.2022.mkv', 2021, ['Dune']), 'near'); // ±1 for regional dates
+  // An alias carrying the release year must not hide that year in filenames.
+  assert.equal(yearMatch('חולית 2021.mp4', 2021, ['Dune', 'חולית', 'Dune (2021)']), 'exact');
 });
 
 test('classify: series', () => {
@@ -76,8 +80,10 @@ test('classify: series', () => {
 });
 
 test('classify: movies', () => {
-  const dune = ['Dune', 'חולית'];
+  const dune = ['Dune', 'חולית', 'Dune (2021)', 'Dune: Part One'];
   assert.equal(classify('Dune.2021.2160p.mkv', dune, undefined, undefined, 2021), 'best');
+  assert.equal(classify('חולית 2021.mp4', dune, undefined, undefined, 2021), 'best');
+  assert.equal(classify('Dune.Drifter.2020.mp4', dune, undefined, undefined, 2021), 'ok'); // single word, ±1
   assert.equal(classify('Dune.1984.mkv', dune, undefined, undefined, 2021), null); // other film
   assert.equal(classify('Dune.mkv', dune, undefined, undefined, 2021), null); // single word, no year
   assert.equal(classify('Dune.S01E01.mkv', dune, undefined, undefined, 2021), null); // episode
@@ -121,6 +127,30 @@ test('dedupe: same upload reposted across channels', () => {
     stream('לולו סרטים האחרונים מבינינו ע1פ2 ת מ 720P.mkv', 1500000000),
   ]);
   assert.equal(out.length, 2);
+});
+
+test('parseYear: Cinemeta year / releaseInfo formats', () => {
+  assert.equal(parseYear('2019'), 2019);
+  assert.equal(parseYear('2023–'), 2023);
+  assert.equal(parseYear('2017–2021'), 2017);
+  assert.equal(parseYear(undefined), undefined);
+});
+
+test('mergeTitleSources: Cinemeta + Wikidata + optional TMDB', () => {
+  const cinemeta = { titles: ['Money Heist'], year: 2017 };
+  const wikidata = { titles: ['בית הנייר', 'Money Heist'], altTitles: ['La casa de papel'], year: undefined };
+  const merged = mergeTitleSources([cinemeta, wikidata, null]); // TMDB disabled
+  assert.deepEqual(merged, {
+    titles: ['Money Heist', 'בית הנייר'],
+    altTitles: ['La casa de papel'],
+    year: 2017,
+  });
+  // A failed Cinemeta lookup still leaves Wikidata's titles and year.
+  assert.deepEqual(mergeTitleSources([null, { titles: ['חולית'], year: 2021 }]), {
+    titles: ['חולית'],
+    altTitles: [],
+    year: 2021,
+  });
 });
 
 test('queries: Hebrew first, main titles before alternatives, no dash variant', () => {

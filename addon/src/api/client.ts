@@ -21,8 +21,8 @@ export async function getJson<T>(url: string, cfg: AxiosRequestConfig = {}): Pro
   try {
     const { data } = await axios.get<T>(url, {
       timeout: 20_000,
-      headers: { ...baseHeaders, ...(cfg.headers ?? {}) },
       ...cfg,
+      headers: { ...baseHeaders, ...(cfg.headers ?? {}) },
     });
     return data;
   } catch (err) {

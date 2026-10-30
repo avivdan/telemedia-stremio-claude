@@ -14,7 +14,7 @@ unchanged.
 
 ```bash
 npm install
-cp .env.example .env      # fill TELEGRAM_API_ID / TELEGRAM_API_HASH (my.telegram.org) and TMDB_API_KEY
+cp .env.example .env      # fill TELEGRAM_API_ID / TELEGRAM_API_HASH (my.telegram.org); no other keys needed
 npm run login             # phone → code → optional 2FA; prints TELEGRAM_SESSION=… for .env
 npm run build && npm start
 ```
@@ -41,8 +41,8 @@ Stremio clients refuse plain-HTTP addons unless the address is loopback
 | `ADDON_HOST` / `ADDON_PORT` | `127.0.0.1` / `7000` | bind address |
 | `PUBLIC_BASE_URL` | `http://127.0.0.1:7000` | base URL Stremio is given |
 | `STREAM_BASE_URL` | `PUBLIC_BASE_URL` | base URL written into stream links |
-| `TMDB_API_KEY`, `TMDB_IMDB_KEY` | Kodi keys (revoked) | set your own TMDB v3 key |
-| `TMDB_LANGUAGE` | `he` | catalog language; search always uses en+he |
+| `TMDB_API_KEY` | — (optional) | adds streaming-provider catalogs, `tmdb:` ids, and extra search titles |
+| `TMDB_LANGUAGE` | `he` | language of the provider catalogs |
 | `TG_KIDS_CHAT_ID`, `TG_HEBREW_GROUP`, `TG_WORLD_GROUP` | Kodi channels | `0` hides the catalog |
 | `STREAM_CHUNK_KB` | `1024` | `upload.getFile` request size (power of two, max 1024) |
 | `STREAM_PARALLEL` | `2` | requests in flight per stream |
@@ -55,11 +55,16 @@ Empty values (`KEY=`) override defaults with `''`, so comment out unused keys in
 
 `/stream/<type>/<id>.json` with `tt…` (Cinemeta) or `tmdb:…` ids:
 
-1. **Titles** (`api/tmdb.ts → tmdbTitleInfo`): one TMDB call with
-   `append_to_response=translations,alternative_titles`, cached for 24h. Main titles
-   are the localized title, the original title, and the en/he translations.
-   Alternative titles: IL, then US/GB, max 3. Only Hebrew/Latin-script titles
-   are kept.
+1. **Titles** (`api/titles.ts → titleInfoForImdb`, no API key needed), cached
+   for 24h. Three sources, queried in parallel; any one can fail:
+   - **Cinemeta** (`v3-cinemeta.strem.io/meta/<type>/<tt>.json`): English title, year
+   - **Wikidata** (one SPARQL query on IMDb id `P345`): Hebrew + English labels
+     (main titles) and aliases ("La casa de papel", "TLoU"), year
+   - **TMDB**, only if `TMDB_API_KEY` is set: translations plus alternative titles
+     for IL/US/GB
+
+   Merged in that order (`mergeTitleSources`). Up to 3 aliases are searched.
+   Only Hebrew/Latin-script titles are kept.
 2. **Queries** (`search/matching.ts → buildQueries`): round-robin by tier,
    main titles before alternative ones, Hebrew first.
    - Series, Hebrew title: `<t> ע<S> פ<E>`, `<t> עונה <S> פרק <E>`, `<t> S<SS>E<EE>`
@@ -79,10 +84,12 @@ Empty values (`KEY=`) override defaults with `''`, so comment out unused keys in
      and maqaf.
    - series: the episode tag must match (`S01E02`, `S01.E02`, `1x02`,
      `Season 1 Episode 2`, `ע1 פ2`, `ע1פ2`, `ע'1 פ'2`, `עונה 1 פרק 2`).
-   - movies: episode-tagged files are dropped. A year within ±1 ranks *best*.
-     A different year is dropped (remakes). No year is kept as *ok*, but only
-     for multi-word titles. Years that are part of the title ("Blade Runner
-     2049") are ignored.
+   - movies: episode-tagged files are dropped. The release year ranks *best*;
+     ±1 also counts for multi-word titles. A different year is dropped
+     (remakes). No year is kept as *ok*, but only for multi-word titles,
+     because one word like "Up" is in too many filenames. Years that are part of a
+     title ("Blade Runner 2049") are ignored, unless that year is the release
+     year (alias "Dune (2021)").
 6. **Ranking** (`rankStreams`, `dedupeStreams`): container (MKV/WebM >
    TS > MP4 > …), then resolution parsed from the filename, then size. The same
    upload in several channels (same size + name) appears once.
@@ -108,10 +115,19 @@ triggers Telegram throttling.
 
 | Catalog | Source |
 |---|---|
-| Movies / TV Shows | TMDB popular + search (ids resolved to `tt…`, so Cinemeta owns meta) |
-| Netflix / Prime / HBO / Disney+ / Apple TV+ | TMDB discover by watch provider |
+| חיפוש בעברית (movie + series, search-only) | Hebrew text in Stremio's search box → Wikidata label search (`api/hebrewSearch.ts`) → items with IMDb ids, typed by Wikidata class. Non-Hebrew queries are ignored (Cinemeta covers them). Cached 1h. No key. |
 | My Groups | your Telegram dialogs |
 | Kids / Hebrew / World | fixed channels from the Kodi addon |
+| Netflix / Prime / HBO / Disney+ / Apple TV+ | TMDB discover by watch provider; **only with `TMDB_API_KEY`** (no keyless watch-provider source) |
+
+There are no generic Movies/TV catalogs. Stremio's built-in Cinemeta already
+shows popular titles and handles English search, and Telemedia provides
+streams for those `tt…` ids.
+
+The manifest scopes resources per id prefix: `meta` only for `tg:`/`tgchat:`/`tmdb:`,
+so Cinemeta always owns `tt…` details (names, episode lists), while `stream`
+also covers `tt`. Bump `version` when catalogs change; Stremio then offers
+"Upgrade" on the addon page.
 
 ## Layout
 
@@ -121,7 +137,9 @@ src/
   manifest.ts           Stremio manifest
   config.ts             .env → typed config
   api/telegram.ts       gramjs client, search, fetchMessage, parallel iterDownload
-  api/tmdb.ts           TMDB catalogs, find-by-IMDb, tmdbTitleInfo (cached)
+  api/titles.ts         keyless titles: Cinemeta + Wikidata (+ TMDB if configured)
+  api/hebrewSearch.ts   Hebrew search box → Wikidata → IMDb ids
+  api/tmdb.ts           optional TMDB: provider catalogs, find-by-IMDb, tmdbTitleInfo
   api/auth.ts           CLI login (npm run login)
   handlers/stream.ts    stream resolution (titles → queries → search → classify → rank)
   handlers/proxy.ts     Range proxy

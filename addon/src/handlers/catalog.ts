@@ -1,14 +1,17 @@
 // Catalog handler. Maps directly to the top-level sections of default.py:
 //
-//   main_menu()         → Movies / TV Shows / My Groups / Kids / Hebrew / World
-//   movies_menu()       → TMDB popular / now playing / genre  (we just ship popular)
-//   tv_show_menu()      → TMDB popular TV
+//   main_menu()         → My Groups / Kids / Hebrew / World (+ provider rows with a TMDB key)
+//   movies_menu() / tv_show_menu() → not ported: Stremio's Cinemeta already
+//                         shows popular movies/series, and we stream for those ids
 //   my_groups()         → listDialogs()
 //   chat catalog        → messages in a specific chat (Kids/Hebrew/World etc.)
 
 import { config } from '../config';
 import * as tmdb from '../api/tmdb';
 import * as tg from '../api/telegram';
+import { hebrewSearch } from '../api/hebrewSearch';
+import { HEBREW_SEARCH_CATALOG } from '../manifest';
+import { hasHebrew } from '../search/matching';
 import { chatToPreview, messageToPreview } from '../mappers/catalogMapper';
 import { makeCache, cached } from '../utils/cache';
 import type { StremioMetaPreview } from '../types';
@@ -35,14 +38,8 @@ async function resolveCatalog(
 ): Promise<StremioMetaPreview[]> {
   log.info('catalog', { type, id, extra });
   switch (id) {
-    case 'telemedia-movies':
-      return extra?.search
-        ? tmdb.searchTmdb(extra.search, 'movie')
-        : tmdb.popularMovies(1 + Math.floor(Number(extra?.skip ?? 0) / 20));
-    case 'telemedia-series':
-      return extra?.search
-        ? tmdb.searchTmdb(extra.search, 'tv')
-        : tmdb.popularTv(1 + Math.floor(Number(extra?.skip ?? 0) / 20));
+    case HEBREW_SEARCH_CATALOG:
+      return hebrewSearchCatalog(type, extra?.search ?? '');
     case 'telemedia-my-groups': {
       const dialogs = await tg.listDialogs(100);
       return dialogs.map(chatToPreview);
@@ -54,9 +51,11 @@ async function resolveCatalog(
     case 'telemedia-world':
       return listChatVideos(String(config.chats.world), extra?.search ?? '');
     default: {
-      // telemedia-prov-<providerId>-<movie|series>
+      // telemedia-prov-<providerId>-<movie|series> (TMDB key only). Unknown
+      // ids — e.g. the removed Movies/TV catalogs, still listed in manifests
+      // cached by Stremio — return nothing.
       const m = /^telemedia-prov-(\d+)-(movie|series)$/.exec(id);
-      if (m) {
+      if (m && config.tmdb.enabled) {
         const providerId = Number(m[1]);
         const kind = m[2] === 'movie' ? 'movie' : 'tv';
         const page = 1 + Math.floor(Number(extra?.skip ?? 0) / 20);
@@ -64,6 +63,28 @@ async function resolveCatalog(
       }
       return [];
     }
+  }
+}
+
+// Stremio's search box sends every query to every search catalog; only act on
+// Hebrew text (English names are already covered by Cinemeta).
+async function hebrewSearchCatalog(type: string, query: string): Promise<StremioMetaPreview[]> {
+  if (!hasHebrew(query)) return [];
+  try {
+    const hits = await hebrewSearch(query);
+    return hits
+      .filter((h) => h.type === type)
+      .map((h) => ({
+        id: h.imdbId,
+        type: h.type,
+        name: h.name,
+        poster: `https://images.metahub.space/poster/medium/${h.imdbId}/img`,
+        releaseInfo: h.year ? String(h.year) : undefined,
+        description: h.enName && h.enName !== h.name ? h.enName : undefined,
+      }));
+  } catch (err) {
+    log.warn('hebrew search failed', query, (err as Error).message);
+    return [];
   }
 }
 

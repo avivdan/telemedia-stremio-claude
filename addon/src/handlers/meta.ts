@@ -21,8 +21,9 @@ export async function metaHandler({ type, id }: MetaArgs): Promise<{ meta: Strem
   if (id.startsWith('tg:')) return { meta: await metaForTgMessage(id) };
   if (id.startsWith('tgchat:')) return { meta: await metaForTgChat(id) };
   if (id.startsWith('tmdb:')) return { meta: await metaForTmdb(id) };
-  // For IMDB (tt...) ids Cinemeta owns meta — return a minimal stub so the SDK
-  // doesn't emit a 404 that spooks Stremio into ignoring our streams.
+  // The manifest scopes meta to our own prefixes, so Stremio sends tt… ids to
+  // Cinemeta. Older clients with a cached manifest may still ask — answer with
+  // a minimal stub rather than a 404.
   return {
     meta: {
       id,

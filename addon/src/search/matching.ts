@@ -108,17 +108,27 @@ export function looksLikeEpisode(text: string): boolean {
   return ANY_EPISODE.some((p) => p.test(text));
 }
 
-// Year check for movies. Years that are part of a title ("Blade Runner 2049")
-// are ignored. 'match' = within ±1 (regional release dates differ),
-// 'conflict' = a different year is present (likely a remake/other film),
-// 'none' = no year in the text.
-export function yearMatch(text: string, year: number, titles: string[]): 'match' | 'conflict' | 'none' {
-  const titleYears = new Set(titles.flatMap((t) => t.match(/(?:19|20)\d{2}/g) ?? []));
+// Year check for movies. 'exact' = release year present, 'near' = ±1
+// (regional release dates differ), 'conflict' = only other years (likely a
+// remake/other film), 'none' = no year in the text.
+// Years that are part of a title ("Blade Runner 2049") are ignored — unless
+// they are the release year itself (aliases like "Dune (2021)").
+export function yearMatch(
+  text: string,
+  year: number,
+  titles: string[],
+): 'exact' | 'near' | 'conflict' | 'none' {
+  const titleYears = new Set(
+    titles
+      .flatMap((t) => t.match(/(?:19|20)\d{2}/g) ?? [])
+      .filter((y) => Math.abs(Number(y) - year) > 1),
+  );
   const years = (text.match(/(?<![0-9])(?:19|20)\d{2}(?![0-9])/g) ?? [])
     .filter((y) => !titleYears.has(y))
     .map(Number);
   if (years.length === 0) return 'none';
-  return years.some((y) => Math.abs(y - year) <= 1) ? 'match' : 'conflict';
+  if (years.includes(year)) return 'exact';
+  return years.some((y) => Math.abs(y - year) <= 1) ? 'near' : 'conflict';
 }
 
 // Resolution from the filename ("1080p", "720P", "4K"). Video metadata height
@@ -130,6 +140,39 @@ export function parseQuality(name: string): number | undefined {
   // Bare "1080" (Hebrew uploads: "איכות 1080"), but not "1920x1080".
   const bare = /(?<![0-9x])(2160|1080|720)(?![0-9])/i.exec(name);
   return bare ? Number(bare[1]) : undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Title sources
+// ---------------------------------------------------------------------------
+export interface TitleInfo {
+  // Official titles (localized/original/en/he labels) — searched first.
+  titles: string[];
+  // Aliases/alternative titles — how uploaders often actually name things
+  // (e.g. "La casa de papel" for Money Heist, "TLoU").
+  altTitles: string[];
+  year?: number;
+}
+
+// First 4-digit year in "2019", "2023–", "2017–2021".
+export function parseYear(s: string | undefined): number | undefined {
+  const m = /(?:19|20)\d{2}/.exec(s ?? '');
+  return m ? Number(m[0]) : undefined;
+}
+
+// Combine sources in priority order: titles/aliases concatenated (exact
+// duplicates dropped; normalized dedupe happens at search time), year from
+// the first source that has one. Missing/failed sources are skipped.
+export function mergeTitleSources(sources: (Partial<TitleInfo> | null | undefined)[]): TitleInfo {
+  const uniq = (list: (string | undefined)[]) => [
+    ...new Set(list.map((t) => t?.trim()).filter((t): t is string => !!t)),
+  ];
+  const present = sources.filter((s): s is Partial<TitleInfo> => !!s);
+  return {
+    titles: uniq(present.flatMap((s) => s.titles ?? [])),
+    altTitles: uniq(present.flatMap((s) => s.altTitles ?? [])),
+    year: present.map((s) => s.year).find((y) => !!y),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -181,9 +224,11 @@ export function buildQueries(
 // ---------------------------------------------------------------------------
 export type Bucket = 'best' | 'ok' | null;
 
-// best = title + episode (series) / title + matching year (movies)
-// ok   = movie title match with no year in the text (multi-word titles only:
-//        a single word like "Up" or "Heat" appears in too many filenames)
+// best = title + episode (series) / title + release year (movies; ±1 only for
+//        multi-word titles)
+// ok   = movie title match with no year (multi-word titles only: a single
+//        word like "Up" or "Heat" appears in too many filenames), or a
+//        single-word title with a ±1 year ("Dune.Drifter.2020" for Dune 2021)
 // null = drop (no title, wrong episode, an episode file for a movie, a
 //        different year)
 export function classify(
@@ -200,10 +245,17 @@ export function classify(
   }
   if (looksLikeEpisode(text)) return null;
   if (!year) return 'ok';
-  const y = yearMatch(text, year, titles);
-  if (y === 'match') return 'best';
-  if (y === 'conflict') return null;
-  return matched.some((t) => norm(t).includes(' ')) ? 'ok' : null;
+  const multiWord = matched.some((t) => norm(t).includes(' '));
+  switch (yearMatch(text, year, titles)) {
+    case 'exact':
+      return 'best';
+    case 'near':
+      return multiWord ? 'best' : 'ok';
+    case 'none':
+      return multiWord ? 'ok' : null;
+    case 'conflict':
+      return null;
+  }
 }
 
 // Container first (MKV/WebM seek reliably; Telegram MP4s often have the moov

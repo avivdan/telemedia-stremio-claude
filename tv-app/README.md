@@ -32,6 +32,9 @@ starts by itself when the TV turns on.
 
 That's it. Open any movie or episode in Stremio and pick a **Telemedia** stream.
 
+**Search in Hebrew:** type a Hebrew name in Stremio's search (פאודה, האחרונים מבינינו, …).
+Results appear in the **חיפוש בעברית** rows.
+
 ## Everyday use
 
 - Nothing to do: Telemedia starts with the TV.
@@ -85,9 +88,19 @@ npm run tv:deploy -- 192.168.0.114:5555     # bundle addon, build APK, adb insta
 `tv:deploy` uses `JAVA_HOME`/`ANDROID_HOME`, falling back to
 `%LOCALAPPDATA%\Android\{jdk-17,Sdk}`.
 
-`tv:bundle` copies the API ID/hash and addon settings (TMDB keys, chat IDs, …)
-from `addon/.env` into the APK as defaults. **Don't share APKs built this way.**
-The Telegram session is never bundled; each TV logs in with its own QR code.
+**Keys.** Users never enter any:
+- Titles come from Cinemeta + Wikidata, which need no key.
+- The Telegram API ID/hash identifies the *app*. Telegram expects each app to
+  embed its own, so don't reuse another app's published ID. `tv:bundle` takes
+  `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` from the environment (use a CI secret
+  for releases), falling back to `addon/.env` for local builds. Without them,
+  the app shows a form asking for them.
+- `TMDB_API_KEY` is optional and baked in the same way. It adds the
+  streaming-provider rows.
+
+The Telegram *session* is never bundled; each TV logs in with its own QR code.
+An APK built with these values contains them, so publish only builds made
+with the project's own Telegram ID.
 
 **Why "add to Stremio" can't be automatic:** Stremio offers no way for another
 app to install an addon. Its `stremio://` install links are rewritten to
