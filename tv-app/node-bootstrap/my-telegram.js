@@ -56,11 +56,34 @@ async function sendCode(phone) {
 
 // Values shown on /apps once the account has an app: the first value after
 // the "api_id" / "api_hash" labels.
+// The markup changes now and then (the hash is sometimes masked on screen and
+// only present in an attribute), so take the first matching value after the
+// "api_id" / "api_hash" label, anywhere in the markup.
+function valueAfter(html, label, pattern) {
+  const at = html.search(label);
+  if (at < 0) return undefined;
+  return (html.slice(at, at + 2000).match(pattern) || [])[1];
+}
+
 function parseKeys(html) {
-  const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-  const apiId = (text.match(/api_id:?\s*(\d{3,12})\b/i) || [])[1];
-  const apiHash = (text.match(/api_hash:?\s*([0-9a-f]{32})\b/i) || [])[1];
+  const body = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+  const apiId = valueAfter(body, /api[_ ]id/i, /(?<![\d.:])(\d{5,12})(?![\d.:])/);
+  const apiHash = valueAfter(body, /api[_ ]hash/i, /(?<![0-9a-f])([0-9a-f]{32})(?![0-9a-f])/i);
   return apiId && apiHash ? { apiId, apiHash: apiHash.toLowerCase() } : null;
+}
+
+// Page markup for the log with every value-like string masked.
+function redactedPage(html) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '<script/>')
+    .replace(/[0-9a-f]{16,}/gi, '<HEX>')
+    .replace(/\+?\d{4,}/g, '<NUM>')
+    .replace(/\s+/g, ' ');
+}
+
+// An account has at most one app; its page is titled "App configuration".
+function hasApp(html) {
+  return /<title>\s*App configuration/i.test(html);
 }
 
 // What the page looks like, for the log — never the values themselves.
@@ -81,18 +104,29 @@ function parseFormHash(html) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Step 2: log in with the code, then read (or create) the app's keys.
-async function fetchKeys({ phone, randomHash, jar }, code, onProgress = () => {}) {
-  const login = await request('/auth/login', {
-    jar,
-    form: { phone, random_hash: randomHash, password: String(code).trim() },
-  });
-  if (login.text !== 'true') throw new Error(login.text || 'Login failed');
+// `pending` remembers the login, so a retry after a later failure needs no new code.
+async function fetchKeys(pending, code, onProgress = () => {}) {
+  const { phone, randomHash, jar } = pending;
+  if (!pending.loggedIn) {
+    const login = await request('/auth/login', {
+      jar,
+      form: { phone, random_hash: randomHash, password: String(code).trim() },
+    });
+    if (login.text !== 'true') throw new Error(login.text || 'Login failed');
+    pending.loggedIn = true;
+  }
 
   onProgress('reading');
   let page = await request('/apps', { jar });
   console.log(`[setup] /apps HTTP ${page.status} ${describePage(page.text)}`);
   let keys = parseKeys(page.text);
   if (keys) return { ...keys, created: false };
+  if (hasApp(page.text)) {
+    const masked = redactedPage(page.text);
+    for (let i = 0; i < masked.length; i += 900) console.log('[setup] page ' + masked.slice(i, i + 900));
+    throw new Error('Could not read the keys from your app on my.telegram.org. ' +
+      'Open "I already have an api_id and api_hash" below and paste them from my.telegram.org.');
+  }
 
   // No app yet. Telegram sometimes answers "ERROR" at first; retry a little.
   onProgress('creating');
@@ -112,7 +146,7 @@ async function fetchKeys({ phone, randomHash, jar }, code, onProgress = () => {}
         app_desc: '',
       },
     });
-    answer = created.text.slice(0, 200);
+    answer = /</.test(created.text) ? '' : created.text.slice(0, 200); // not a whole page
     console.log(`[setup] /apps/create HTTP ${created.status} answer="${answer}"`);
     page = await request('/apps', { jar });
     keys = parseKeys(page.text);
