@@ -13,6 +13,7 @@ import { TelegramClient, Api, errors } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import bigInt from 'big-integer';
 import { config } from '../config';
+import { userConfigPath } from '../userConfig';
 import { log } from '../utils/logger';
 import type { TgChatSummary, TgMediaRef } from '../types';
 
@@ -34,9 +35,9 @@ export function getCachedMessage(chatId: string, messageId: number): Api.Message
 
 export async function getClient(): Promise<TelegramClient> {
   if (singleton) return singleton;
-  if (!config.telegram.session) {
+  if (!config.telegram.apiId || !config.telegram.apiHash || !config.telegram.session) {
     throw new Error(
-      'TELEGRAM_SESSION is empty. Run `npm run login` first to generate one.',
+      `Not logged in to Telegram. Run \`npm run login\` first (saves to ${userConfigPath()}).`,
     );
   }
   const client = new TelegramClient(

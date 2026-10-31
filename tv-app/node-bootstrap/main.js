@@ -34,7 +34,8 @@ let stremioStatus = { state: 'idle' };
 let resolveAddonReady;
 const addonReady = new Promise((r) => { resolveAddonReady = r; });
 
-// Build-time defaults (bundle-node.mjs copies API ID/hash from the repo .env).
+// Build-time defaults (bundle-node.mjs: API ID/hash and settings from the
+// build environment or the developer's user config file).
 // Values saved from the TV UI in config.json take precedence.
 function readDefaults() {
   try {
@@ -200,7 +201,7 @@ function waitForAddon(port) {
 function startAddon(cfg) {
   const port = String(cfg.port || 7000);
   const base = 'http://127.0.0.1:' + port;
-  // Addon settings bundled from the repo .env (catalog country, chat ids, ...).
+  // Addon settings bundled at build time (catalog country, chat ids, ...).
   for (const [k, v] of Object.entries(readDefaults().env || {})) {
     if (process.env[k] === undefined) process.env[k] = v;
   }

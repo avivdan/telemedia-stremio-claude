@@ -12,6 +12,7 @@
 
 import { execSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -49,11 +50,12 @@ writeFileSync(join(stage, 'package.json'), JSON.stringify(prodPkg, null, 2));
 
 // Build-time defaults baked into the APK:
 //  - Telegram API ID/hash: identifies the *app* (Telegram expects each app to
-//    embed its own), so users only scan a QR code. For release builds set
-//    TELEGRAM_API_ID / TELEGRAM_API_HASH in the build environment (CI secret);
-//    local builds fall back to addon/.env.
+//    embed its own), so users only scan a QR code. Release builds: set
+//    TELEGRAM_API_ID / TELEGRAM_API_HASH in the build environment (CI secret).
+//    Local builds fall back to the desktop addon's user config file
+//    (written by `npm run login`, see addon/src/userConfig.ts).
 //  - optional addon settings (catalog country, chat ids, ...), same precedence.
-// Deliberately NOT bundled: TELEGRAM_SESSION (each device logs in itself),
+// Deliberately NOT bundled: the Telegram session (each device logs in itself),
 // host/port/base URLs (TV always serves 127.0.0.1), STREAM_PREFETCH_KB (low RAM).
 const PASS_THROUGH_ENV = [
   'CATALOG_COUNTRY',
@@ -67,17 +69,12 @@ const PASS_THROUGH_ENV = [
   'CACHE_TTL_SECONDS',
   'LOG_LEVEL',
 ];
-const envPath = join(addonRoot, '.env');
-const dotenv = existsSync(envPath)
-  ? Object.fromEntries(
-      readFileSync(envPath, 'utf8')
-        .split(/\r?\n/)
-        .map((l) => /^\s*([A-Z0-9_]+)\s*=\s*([^#\s]+)/.exec(l))
-        .filter(Boolean)
-        .map((m) => [m[1], m[2]]),
-    )
-  : {};
-const setting = (k) => process.env[k] || dotenv[k];
+// Same lookup as the addon itself: environment, then the user config file.
+const { readUserConfig, resolveSetting } = createRequire(import.meta.url)(
+  join(addonRoot, 'dist', 'src', 'userConfig.js'),
+);
+const userConfig = readUserConfig();
+const setting = (k) => resolveSetting(k, process.env, userConfig);
 const defaults = {
   apiId: setting('TELEGRAM_API_ID'),
   apiHash: setting('TELEGRAM_API_HASH'),

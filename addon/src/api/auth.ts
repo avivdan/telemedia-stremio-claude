@@ -1,21 +1,24 @@
-// Replaces login.py's TDLib state machine with a single-shot gramjs sign-in.
+// Interactive Telegram sign-in for the desktop addon (`npm run login`).
+// Replaces login.py's TDLib state machine; the result goes to the user config
+// file (see userConfig.ts) — no .env to edit.
+//
+// Default: QR login, same as the TV app — a QR code is drawn in the terminal
+// and scanned in Telegram on the phone (Settings → Devices → Link Desktop
+// Device). `--phone` uses the phone-number + code flow instead.
 //
 // Kodi equivalents:
 //   authorizationStateWaitPhoneNumber   → prompt("phone")
 //   authorizationStateWaitCode          → prompt("code")
 //   authorizationStateWaitPassword      → prompt("2FA password")
 //   authorizationStateReady             → StringSession.save()
-//
-// We cannot keep this flow inside the Stremio handler (Stremio has no
-// interactive UI) so the user runs `npm run login` once in a terminal.
 
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
-import { config } from '../config';
+import qrcode from 'qrcode-terminal';
 
-async function prompt(question: string, hidden = false): Promise<string> {
+export async function prompt(question: string, hidden = false): Promise<string> {
   const rl = readline.createInterface({ input, output });
   if (hidden) {
     // Disable local echo for password entry
@@ -47,20 +50,44 @@ async function prompt(question: string, hidden = false): Promise<string> {
   return answer;
 }
 
-export async function interactiveLogin(): Promise<string> {
-  const client = new TelegramClient(
-    new StringSession(''),
-    config.telegram.apiId,
-    config.telegram.apiHash,
-    { connectionRetries: 5 },
-  );
+export interface LoginOptions {
+  apiId: number;
+  apiHash: string;
+  method: 'qr' | 'phone';
+}
 
-  await client.start({
-    phoneNumber: async () => prompt('Phone number (international format): '),
-    password: async () => prompt('2FA password (blank if none): ', true),
-    phoneCode: async () => prompt('Login code from Telegram: '),
-    onError: (err) => console.error('[login]', err),
+// Returns the StringSession to store.
+export async function interactiveLogin({ apiId, apiHash, method }: LoginOptions): Promise<string> {
+  const client = new TelegramClient(new StringSession(''), apiId, apiHash, {
+    connectionRetries: 5,
   });
+  await client.connect();
+
+  if (method === 'qr') {
+    await client.signInUserWithQrCode(
+      { apiId, apiHash },
+      {
+        qrCode: async ({ token }) => {
+          console.clear();
+          console.log('Scan with Telegram on your phone: Settings → Devices → Link Desktop Device\n');
+          qrcode.generate(`tg://login?token=${token.toString('base64url')}`, { small: true });
+          console.log('\n(The code refreshes automatically. Ctrl+C to cancel.)');
+        },
+        password: async (hint) => prompt(`Two-step verification password${hint ? ` (hint: ${hint})` : ''}: `, true),
+        onError: async (err) => {
+          console.error('[login]', err.message);
+          return true;
+        },
+      },
+    );
+  } else {
+    await client.start({
+      phoneNumber: async () => prompt('Phone number (international format): '),
+      password: async () => prompt('2FA password (blank if none): ', true),
+      phoneCode: async () => prompt('Login code from Telegram: '),
+      onError: (err) => console.error('[login]', err),
+    });
+  }
 
   const session = (client.session as StringSession).save();
   await client.disconnect();

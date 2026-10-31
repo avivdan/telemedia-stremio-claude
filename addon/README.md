@@ -14,10 +14,13 @@ unchanged.
 
 ```bash
 npm install
-cp .env.example .env      # fill TELEGRAM_API_ID / TELEGRAM_API_HASH (my.telegram.org); no other keys needed
-npm run login             # phone → code → optional 2FA; prints TELEGRAM_SESSION=… for .env
+npm run login             # Telegram QR code in the terminal (or: npm run login -- --phone)
 npm run build && npm start
 ```
+
+`npm run login` asks once for your Telegram API ID/hash (my.telegram.org) if
+none is set, then saves them and the session to the user config file. There
+is no `.env` file to edit.
 
 Install in Stremio: `http://127.0.0.1:7000/manifest.json`.
 
@@ -26,18 +29,27 @@ Install in Stremio: `http://127.0.0.1:7000/manifest.json`.
 Stremio clients refuse plain-HTTP addons unless the address is loopback
 (`127.0.0.1`). Options:
 
-| Setup | `.env` |
+| Setup | Settings |
 |---|---|
 | Same machine | defaults |
 | Android TV | Use the TV app. It serves on the TV's own loopback. For testing a PC build on the TV: `adb reverse tcp:7000 tcp:7000` |
 | Other devices | HTTPS tunnel (e.g. `cloudflared tunnel --url http://localhost:7000`): `PUBLIC_BASE_URL=https://…`, `ADDON_HOST=0.0.0.0`, and `STREAM_BASE_URL=http://<lan-ip>:7000` to keep video off the tunnel (free tunnels drop long streams) |
 
-## Configuration (`.env`)
+## Configuration
 
-| Variable | Default | Notes |
+There's no `.env`. Each setting is read, in order, from:
+1. **an environment variable** with the name below (CI, Docker, the TV app, one-off overrides);
+2. **the user config file**, written by `npm run login`:
+   `%APPDATA%\telemedia\config.json` on Windows, `~/.config/telemedia/config.json`
+   elsewhere (override the path with `TELEMEDIA_CONFIG`). Credentials sit at the top
+   level (`apiId`, `apiHash`, `session`), other settings under `"settings"`, e.g.
+   `{"settings": {"CATALOG_COUNTRY": "US"}}`;
+3. **the built-in default.**
+
+| Setting | Default | Notes |
 |---|---|---|
-| `TELEGRAM_API_ID`, `TELEGRAM_API_HASH` | — (required) | my.telegram.org |
-| `TELEGRAM_SESSION` | — | `npm run login`. Full account access, keep secret |
+| `TELEGRAM_API_ID`, `TELEGRAM_API_HASH` | — (required) | my.telegram.org; `npm run login` asks once and saves them |
+| `TELEGRAM_SESSION` | — | written by `npm run login`. Full account access; the config file is created owner-only |
 | `ADDON_HOST` / `ADDON_PORT` | `127.0.0.1` / `7000` | bind address |
 | `PUBLIC_BASE_URL` | `http://127.0.0.1:7000` | base URL Stremio is given |
 | `STREAM_BASE_URL` | `PUBLIC_BASE_URL` | base URL written into stream links |
@@ -49,7 +61,7 @@ Stremio clients refuse plain-HTTP addons unless the address is loopback
 | `CACHE_TTL_SECONDS` | `900` | catalog cache |
 | `LOG_LEVEL` | `info` | |
 
-Empty values (`KEY=`) override defaults with `''`, so comment out unused keys instead.
+Empty values fall through to the next source.
 
 **No third-party API keys.** The only credential is the Telegram API ID/hash,
 which identifies the app itself. All metadata comes from keyless public services:
@@ -137,7 +149,8 @@ also covers `tt`. Bump `version` when catalogs change; Stremio then offers
 src/
   index.ts              HTTP server: Range proxy + Stremio SDK router; exports addonEvents
   manifest.ts           Stremio manifest
-  config.ts             .env → typed config
+  config.ts             env vars → user config file → defaults
+  userConfig.ts         user config file (path, read/write, precedence)
   api/telegram.ts       gramjs client, search, fetchMessage, parallel iterDownload
   api/titles.ts         keyless titles: Cinemeta + Wikidata
   api/hebrewSearch.ts   Hebrew search box → Wikidata → IMDb ids
@@ -170,7 +183,7 @@ npm test                                            # unit tests
   through the `עונה 1 פרק 2` query, which matches the captions.
 - **Copyright-stripped channels:** Telegram returns placeholders without media
   in some regions. Nothing to do client-side.
-- **Single user:** one `.env` means one Telegram account.
+- **Single user:** one config file means one Telegram account.
 - **Unofficial endpoints:** JustWatch's GraphQL and Stremio's link and
   addon-collection APIs (used by the TV app) are undocumented, so they can change.
   The rows and the auto-install fail soft: an empty row, or the manual

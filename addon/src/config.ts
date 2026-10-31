@@ -1,40 +1,42 @@
-import 'dotenv/config';
+// Configuration — no .env file. Each setting comes from, in order:
+//   1. an environment variable (CI, Docker, the Android TV app, overrides)
+//   2. the user config file written by `npm run login` (see userConfig.ts)
+//   3. the built-in default below
 
-function req(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing required env var: ${name}`);
-  return v;
-}
-function opt(name: string, fallback: string): string {
-  return process.env[name] ?? fallback;
-}
-function num(name: string, fallback: number): number {
-  const v = process.env[name];
-  return v == null || v === '' ? fallback : Number(v);
-}
+import { readUserConfig, resolveSetting } from './userConfig';
+
+const file = readUserConfig();
+const get = (name: string) => resolveSetting(name, process.env, file);
+const str = (name: string, fallback: string) => get(name) ?? fallback;
+const num = (name: string, fallback: number) => {
+  const v = get(name);
+  return v == null ? fallback : Number(v);
+};
 
 export const config = {
+  // Missing credentials don't fail at import (the login script needs to load
+  // this before they exist); the Telegram client checks them when connecting.
   telegram: {
-    apiId: Number(req('TELEGRAM_API_ID')),
-    apiHash: req('TELEGRAM_API_HASH'),
-    session: process.env.TELEGRAM_SESSION ?? '',
-    botUsername: opt('TG_BOT_USERNAME', ''),
+    apiId: num('TELEGRAM_API_ID', 0),
+    apiHash: str('TELEGRAM_API_HASH', ''),
+    session: str('TELEGRAM_SESSION', ''),
+    botUsername: str('TG_BOT_USERNAME', ''),
   },
   server: {
-    host: opt('ADDON_HOST', '127.0.0.1'),
+    host: str('ADDON_HOST', '127.0.0.1'),
     port: num('ADDON_PORT', 7000),
-    publicBaseUrl: opt('PUBLIC_BASE_URL', 'http://127.0.0.1:7000'),
-    streamBaseUrl: opt('STREAM_BASE_URL', process.env.PUBLIC_BASE_URL ?? 'http://127.0.0.1:7000'),
+    publicBaseUrl: str('PUBLIC_BASE_URL', 'http://127.0.0.1:7000'),
+    streamBaseUrl: str('STREAM_BASE_URL', str('PUBLIC_BASE_URL', 'http://127.0.0.1:7000')),
   },
   // Streaming-service rows (JustWatch): availability country and title language.
   catalog: {
-    country: opt('CATALOG_COUNTRY', 'IL'),
-    language: opt('CATALOG_LANGUAGE', 'he'),
+    country: str('CATALOG_COUNTRY', 'IL'),
+    language: str('CATALOG_LANGUAGE', 'he'),
   },
   chats: {
-    kids: BigInt(opt('TG_KIDS_CHAT_ID', '-1001251653717')),
-    hebrew: BigInt(opt('TG_HEBREW_GROUP', '-1001106800100')),
-    world: BigInt(opt('TG_WORLD_GROUP', '-1001000750206')),
+    kids: BigInt(str('TG_KIDS_CHAT_ID', '-1001251653717')),
+    hebrew: BigInt(str('TG_HEBREW_GROUP', '-1001106800100')),
+    world: BigInt(str('TG_WORLD_GROUP', '-1001000750206')),
   },
   streaming: {
     // Telegram upload.getFile request size; 1 MiB (the max) ≈ 2x the
@@ -48,7 +50,7 @@ export const config = {
   cache: {
     ttlSeconds: num('CACHE_TTL_SECONDS', 900),
   },
-  logLevel: opt('LOG_LEVEL', 'info'),
+  logLevel: str('LOG_LEVEL', 'info'),
 };
 
 export type Config = typeof config;
