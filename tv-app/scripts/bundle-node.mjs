@@ -48,15 +48,13 @@ const prodPkg = {
 };
 writeFileSync(join(stage, 'package.json'), JSON.stringify(prodPkg, null, 2));
 
-// Build-time defaults baked into the APK:
-//  - Telegram API ID/hash: identifies the *app* (Telegram expects each app to
-//    embed its own), so users only scan a QR code. Release builds: set
-//    TELEGRAM_API_ID / TELEGRAM_API_HASH in the build environment (CI secret).
-//    Local builds fall back to the desktop addon's user config file
-//    (written by `npm run login`, see addon/src/userConfig.ts).
-//  - optional addon settings (catalog country, chat ids, ...), same precedence.
-// Deliberately NOT bundled: the Telegram session (each device logs in itself),
-// host/port/base URLs (TV always serves 127.0.0.1), STREAM_PREFETCH_KB (low RAM).
+// Build-time defaults baked into the APK: optional addon settings (catalog
+// country, chat ids, ...) from the build environment or the developer's user
+// config file (addon/src/userConfig.ts).
+// Deliberately NOT bundled: any Telegram credentials — every user enters their
+// own API ID/hash in the app's setup screen and logs in with their own QR scan
+// — plus host/port/base URLs (TV always serves 127.0.0.1) and
+// STREAM_PREFETCH_KB (low RAM).
 const PASS_THROUGH_ENV = [
   'CATALOG_COUNTRY',
   'CATALOG_LANGUAGE',
@@ -76,13 +74,11 @@ const { readUserConfig, resolveSetting } = createRequire(import.meta.url)(
 const userConfig = readUserConfig();
 const setting = (k) => resolveSetting(k, process.env, userConfig);
 const defaults = {
-  apiId: setting('TELEGRAM_API_ID'),
-  apiHash: setting('TELEGRAM_API_HASH'),
   env: Object.fromEntries(PASS_THROUGH_ENV.filter((k) => setting(k)).map((k) => [k, setting(k)])),
 };
 writeFileSync(join(stage, 'defaults.json'), JSON.stringify(defaults));
 console.log(
-  `Bundled defaults: ${defaults.apiId ? 'Telegram API id/hash' : 'NO Telegram API id (app will ask)'}` +
+  `Bundled defaults: no Telegram credentials (users enter their own)` +
     (Object.keys(defaults.env).length ? ` + ${Object.keys(defaults.env).join(', ')}` : ''),
 );
 

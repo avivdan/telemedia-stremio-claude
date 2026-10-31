@@ -34,9 +34,8 @@ let stremioStatus = { state: 'idle' };
 let resolveAddonReady;
 const addonReady = new Promise((r) => { resolveAddonReady = r; });
 
-// Build-time defaults (bundle-node.mjs: API ID/hash and settings from the
-// build environment or the developer's user config file).
-// Values saved from the TV UI in config.json take precedence.
+// Build-time addon settings (bundle-node.mjs). Never credentials: each user
+// enters their own Telegram API ID/hash in the setup screen (config.json).
 function readDefaults() {
   try {
     return JSON.parse(fs.readFileSync(path.join(__dirname, 'defaults.json'), 'utf8'));
@@ -46,16 +45,11 @@ function readDefaults() {
 }
 
 function readConfig() {
-  let cfg = {};
   try {
-    cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
-  } catch {}
-  const defaults = readDefaults();
-  if (!cfg.apiId || !cfg.apiHash) {
-    cfg.apiId = defaults.apiId;
-    cfg.apiHash = defaults.apiHash;
+    return JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  } catch {
+    return {};
   }
-  return cfg;
 }
 
 function writeConfig(cfg) {

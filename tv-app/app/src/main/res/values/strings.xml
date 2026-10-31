@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Telemedia</string>
-    <string name="api_id_hint">Telegram API ID</string>
-    <string name="api_hash_hint">Telegram API hash</string>
+    <string name="api_id_hint">App api_id (numbers)</string>
+    <string name="api_hash_hint">App api_hash (32 letters/digits)</string>
     <string name="save">Save and start</string>
     <string name="restart">Restart addon</string>
     <string name="logout">Log out of Telegram</string>
     <string name="password_hint">Two-step verification password</string>
     <string name="send">Send</string>
     <string name="qr_description">Telegram login QR code</string>
+    <string name="setup_qr_caption">Scan to open\nmy.telegram.org\non your phone</string>
+    <string name="setup_qr_description">QR code for my.telegram.org</string>
+    <string name="setup_instructions">Welcome! One-time setup:\n\n1. On your phone, open my.telegram.org (scan the code), log in with your phone number, then API development tools → create an app (any name).\n2. Enter the App api_id and api_hash on the right, then Save and start.\n\nTip: type with the Google TV / Android TV remote app on your phone.</string>
     <string name="telegram_qr_caption">Telegram — in the Telegram app:\nSettings → Devices → Link Desktop Device</string>
     <string name="stremio_qr_caption">Stremio — scan with the phone camera, then confirm</string>
     <string name="stremio_qr_description">Stremio pairing QR code</string>

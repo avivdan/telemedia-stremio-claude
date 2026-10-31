@@ -10,6 +10,7 @@
     "addon:test": "npm --prefix addon test",
     "tv:libnode": "node tv-app/scripts/fetch-libnode.mjs",
     "tv:bundle": "node tv-app/scripts/bundle-node.mjs",
-    "tv:deploy": "node tv-app/scripts/deploy.mjs"
+    "tv:deploy": "node tv-app/scripts/deploy.mjs",
+    "tv:release": "node tv-app/scripts/release.mjs"
   }
 }

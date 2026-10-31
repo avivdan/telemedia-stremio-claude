@@ -13,7 +13,13 @@ starts by itself when the TV turns on.
 ## Setup (about 2 minutes, once)
 
 1. **Install the app** on the TV (see *Installing the APK* below).
-2. **Open Telemedia.** Two QR codes appear. Scan both with your phone, in any order:
+2. **Get your Telegram API key (once).** Open Telemedia. The first screen has a QR
+   code: scan it to open **my.telegram.org** on your phone. Log in with your
+   phone number, go to *API development tools* and create an app (any name and
+   short name). Enter the **App api_id** and **App api_hash** on the TV and choose
+   **Save and start**. Typing is easiest with the Google TV / Android TV remote
+   app on your phone.
+3. **Two QR codes appear.** Scan both with your phone, in any order:
    - **Telegram:** in the Telegram app, *Settings → Devices → Link Desktop Device*.
      If you use a two-step verification password, type it on the TV.
    - **Stremio:** with the phone camera. Confirm on the page that opens (log in
@@ -96,18 +102,12 @@ npm run tv:deploy -- 192.168.0.114:5555     # bundle addon, build APK, adb insta
 `tv:deploy` uses `JAVA_HOME`/`ANDROID_HOME`, falling back to
 `%LOCALAPPDATA%\Android\{jdk-17,Sdk}`.
 
-**Keys.** No third-party API keys at all. Titles, Hebrew search and the
+**Keys.** None are built into the APK. Titles, Hebrew search and the
 streaming-service rows come from Cinemeta, Wikidata and JustWatch, all keyless.
-The only credential is the Telegram API ID/hash, which identifies the *app*.
-Telegram expects each app to embed its own, so don't reuse another app's
-published ID. `tv:bundle` takes `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` from
-the environment (use a CI secret for releases), falling back to the desktop
-addon's user config file (written by `npm run login`) for local builds.
-Without them, the app shows a form asking for them.
-
-The Telegram *session* is never bundled; each TV logs in with its own QR code.
-An APK built with these values contains them, so publish only builds made
-with the project's own Telegram ID.
+For Telegram, every user enters their **own** API ID/hash in the first-run
+setup screen (stored in the app's private `config.json`) and logs in with their
+own QR scan. Each user is on their own Telegram rate limits, and the APK is
+safe to publish.
 
 **Adding the addon to Stremio** (`node-bootstrap/stremio-link.js`): Stremio has
 no API for another app to install an addon into the Stremio app. Its
@@ -119,13 +119,17 @@ addon collection, appends or refreshes Telemedia, writes it back and verifies,
 then logs that session out. It never writes unless it read a non-empty list.
 Fallback: the "Open Stremio Add-ons" button plus the URL.
 
-**Releasing** (`.github/workflows/release.yml`): push a tag `vX.Y.Z`. CI runs the
-addon tests, stages the bundle with the Telegram ID from secrets, builds the APK
-signed with the release key (versionName from the tag, versionCode =
-major·10000 + minor·100 + patch), and attaches `Telemedia-vX.Y.Z.apk` to a GitHub
-Release. It refuses to run if any secret is missing. Required repository
-secrets: `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEMEDIA_KEYSTORE_BASE64`,
-`TELEMEDIA_KEYSTORE_PASSWORD`, `TELEMEDIA_KEY_ALIAS`, `TELEMEDIA_KEY_PASSWORD`.
+**Releasing.** Either way the APK is signed with the release key, with
+versionName from the version you give and versionCode = major·10000 +
+minor·100 + patch.
+- **Locally, no secrets:** `npm run tv:release -- 0.3.0` builds and verifies
+  `tv-app/release/Telemedia-v0.3.0.apk`, using `signing.properties` + the
+  keystore from `~/Documents/telemedia-signing` (or `TELEMEDIA_SIGNING_DIR`).
+  Then attach the APK to a GitHub Release.
+- **GitHub Actions** (`.github/workflows/release.yml`): push a tag `vX.Y.Z`.
+  It needs the keystore as repository secrets (`TELEMEDIA_KEYSTORE_BASE64`,
+  `TELEMEDIA_KEYSTORE_PASSWORD`, `TELEMEDIA_KEY_ALIAS`, `TELEMEDIA_KEY_PASSWORD`)
+  and refuses to run without them.
 
 The release keystore is not in the repo. Keep it and its password backed up:
 Android only installs updates signed with the same key. Local builds

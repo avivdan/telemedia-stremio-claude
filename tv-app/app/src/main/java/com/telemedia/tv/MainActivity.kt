@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -22,6 +23,8 @@ import org.json.JSONObject
  * parallel, the Stremio pairing QR that adds the addon to the user's Stremio
  * account → running.
  */
+private const val MY_TELEGRAM_URL = "https://my.telegram.org/apps"
+
 class MainActivity : Activity() {
 
     private val handler = Handler(Looper.getMainLooper())
@@ -35,9 +38,21 @@ class MainActivity : Activity() {
     private lateinit var passwordGroup: View
     private lateinit var password: EditText
     private lateinit var stremioButton: Button
+    private lateinit var setupGroup: View
+    private lateinit var setupQr: ImageView
     private var shownQrUrl: String? = null
     private var shownStremioLink: String? = null
+    private var setupFocused = false
     private var stremioAction: () -> Unit = {}
+    // A message (e.g. a validation error) shown over the polled status for a while.
+    private var notice: String? = null
+    private var noticeUntil = 0L
+
+    private fun showNotice(message: String, millis: Long = 8000) {
+        notice = message
+        noticeUntil = System.currentTimeMillis() + millis
+        status.text = message
+    }
 
     private val poll = object : Runnable {
         override fun run() {
@@ -64,14 +79,31 @@ class MainActivity : Activity() {
         password = findViewById(R.id.password)
         stremioButton = findViewById(R.id.open_stremio)
         stremioButton.setOnClickListener { stremioAction() }
+        setupGroup = findViewById(R.id.setup_group)
+        setupQr = findViewById(R.id.setup_qr)
+        setupQr.setImageBitmap(qrBitmap(MY_TELEGRAM_URL, 400))
 
         val cfg = AppConfig.read(this)
         apiId.setText(cfg.optString("apiId"))
         apiHash.setText(cfg.optString("apiHash"))
+        // Visible while typing it the first time; masked once saved.
+        if (cfg.optString("apiHash").isNotBlank()) {
+            apiHash.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
 
         findViewById<Button>(R.id.save).setOnClickListener {
-            AppConfig.saveCredentials(this, apiId.text.toString().trim(), apiHash.text.toString().trim())
-            restartNode("Saved. Restarting…")
+            val id = apiId.text.toString().trim()
+            val hash = apiHash.text.toString().trim()
+            when {
+                !id.matches(Regex("\\d{3,12}")) ->
+                    showNotice("The api_id is a number (from my.telegram.org → API development tools).")
+                !hash.matches(Regex("[0-9a-fA-F]{32}")) ->
+                    showNotice("The api_hash is 32 letters and digits — check for typos.")
+                else -> {
+                    AppConfig.saveCredentials(this, id, hash.lowercase())
+                    restartNode("Saved. Starting…")
+                }
+            }
         }
         findViewById<Button>(R.id.restart).setOnClickListener { restartNode("Restarting…") }
         findViewById<Button>(R.id.logout).setOnClickListener {
@@ -98,7 +130,7 @@ class MainActivity : Activity() {
     }
 
     private fun restartNode(message: String) {
-        status.text = message
+        showNotice(message, 3000)
         shownQrUrl = null
         shownStremioLink = null
         Thread { NodeService.restart(applicationContext) }.start()
@@ -107,6 +139,13 @@ class MainActivity : Activity() {
     private fun render(s: JSONObject?) {
         val state = s?.optString("state") ?: "offline"
         passwordGroup.visibility = if (state == "need_password") View.VISIBLE else View.GONE
+
+        // First-run setup: link to my.telegram.org, cursor in the api_id field.
+        setupGroup.visibility = if (state == "need_config") View.VISIBLE else View.GONE
+        if (state == "need_config" && !setupFocused) {
+            setupFocused = true
+            apiId.requestFocus()
+        }
 
         // Telegram QR
         telegramGroup.visibility = if (state == "qr") View.VISIBLE else View.GONE
@@ -121,8 +160,9 @@ class MainActivity : Activity() {
         // Stremio pairing QR — shown whenever pairing waits, also during Telegram login.
         val stremio = s?.optJSONObject("stremio")
         val stremioState = stremio?.optString("state") ?: "idle"
+        // Not during first-run setup: one step at a time.
         val pairing = stremioState == "waiting" && s?.optBoolean("stremioConnected") != true &&
-            Stremio.installedPackage(this) != null
+            state != "need_config" && Stremio.installedPackage(this) != null
         stremioGroup.visibility = if (pairing) View.VISIBLE else View.GONE
         if (pairing) {
             val link = stremio!!.optString("link")
@@ -132,18 +172,19 @@ class MainActivity : Activity() {
             }
         }
 
-        status.text = when (state) {
+        val text = when (state) {
             "offline" -> "Starting addon service…"
             "starting", "logging_in" -> "Connecting to Telegram…"
             "starting_addon" -> "Starting addon…"
-            "need_config" -> "Enter your Telegram API ID and hash (my.telegram.org), then Save."
+            "need_config" -> getString(R.string.setup_instructions)
             "qr" -> if (pairing) "Scan both codes with your phone:" else "Scan with Telegram on your phone:"
             "need_password" -> "Two-step verification password required" +
                 s!!.optString("hint").let { if (it.isNotBlank()) " (hint: $it)" else "" }
             "running" -> runningText(s!!, stremioState, stremio?.optString("error"))
-            "error" -> "Error: ${s!!.optString("error")}\nCheck credentials and press Restart."
+            "error" -> errorText(s!!.optString("error"))
             else -> state
         }
+        status.text = if (notice != null && System.currentTimeMillis() < noticeUntil) notice else text
         if (state != "running") stremioButton.visibility = View.GONE
     }
 
@@ -171,6 +212,14 @@ class MainActivity : Activity() {
             else -> "Telemedia is running ✔\n\nLast step: scan the Stremio code with your phone camera " +
                 "and confirm.\n$manual"
         }
+    }
+
+    private fun errorText(error: String): String = when {
+        error.contains("API_ID_INVALID") ->
+            "Telegram rejected the api_id / api_hash. Fix them on the right and Save and start."
+        error.contains("API_ID_PUBLISHED_FLOOD") ->
+            "Telegram blocked this api_id. Create a new app on my.telegram.org and enter its values."
+        else -> "Error: $error\nCheck your api_id / api_hash and press Restart."
     }
 
     private fun qrBitmap(text: String, size: Int): Bitmap {

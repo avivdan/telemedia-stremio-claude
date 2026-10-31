@@ -34,6 +34,31 @@
                 android:textColor="#D0D7DE"
                 android:textSize="20sp" />
 
+            <!-- First-run setup: QR that opens my.telegram.org on the phone -->
+            <LinearLayout
+                android:id="@+id/setup_group"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/setup_qr"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:contentDescription="@string/setup_qr_description" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_gravity="center_vertical"
+                    android:text="@string/setup_qr_caption"
+                    android:textColor="#D0D7DE"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
             <Button
                 android:id="@+id/open_stremio"
                 android:layout_width="wrap_content"
@@ -142,7 +167,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/api_hash_hint"
-                android:inputType="textPassword"
+                android:inputType="textNoSuggestions|textVisiblePassword"
                 android:textColor="#FFFFFF"
                 android:textColorHint="#8B949E" />
 

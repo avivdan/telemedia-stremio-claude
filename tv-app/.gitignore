@@ -6,3 +6,4 @@ local.properties
 app/.cxx/
 app/libnode/
 node-staging/
+release/
