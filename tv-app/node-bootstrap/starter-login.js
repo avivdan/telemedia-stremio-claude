@@ -122,7 +122,7 @@ async function run({ starter, onQr, askPassword, onStep }) {
         );
         result.session = own.session.save();
       } finally {
-        await own.disconnect().catch(() => {});
+        await own.destroy().catch(() => {});
       }
     } catch (err) {
       console.log('[starter] could not log in with the own key: ' + errorText(err));
@@ -131,7 +131,7 @@ async function run({ starter, onQr, askPassword, onStep }) {
   } finally {
     // Don't keep the starter login around, even after a failure.
     if (!keepStarter) await starterClient.invoke(new Api.auth.LogOut()).catch(() => {});
-    await starterClient.disconnect().catch(() => {});
+    await starterClient.destroy().catch(() => {});
   }
 }
 

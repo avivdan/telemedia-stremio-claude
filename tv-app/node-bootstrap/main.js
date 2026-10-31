@@ -149,7 +149,7 @@ async function qrLogin(cfg) {
   );
 
   const session = client.session.save();
-  await client.disconnect();
+  await client.destroy(); // disconnect() would leave its ping loop running
   return session;
 }
 
@@ -171,7 +171,7 @@ async function sessionIsValid(cfg) {
     if (DEAD_SESSION.test(String(err && (err.errorMessage || err.message)))) return false;
     throw err;
   } finally {
-    await client.disconnect().catch(() => {});
+    await client.destroy().catch(() => {});
   }
 }
 
