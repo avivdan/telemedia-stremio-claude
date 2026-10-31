@@ -13,6 +13,7 @@
 import { execSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -51,10 +52,11 @@ writeFileSync(join(stage, 'package.json'), JSON.stringify(prodPkg, null, 2));
 // Build-time defaults baked into the APK: optional addon settings (catalog
 // country, chat ids, ...) from the build environment or the developer's user
 // config file (addon/src/userConfig.ts).
-// Deliberately NOT bundled: any Telegram credentials — every user enters their
-// own API ID/hash in the app's setup screen and logs in with their own QR scan
-// — plus host/port/base URLs (TV always serves 127.0.0.1) and
-// STREAM_PREFETCH_KB (low RAM).
+// Telegram credentials: only the optional starter key (see starterKey below),
+// which first-run setup uses for a few minutes to fetch each user's own API
+// ID/hash; the addon always runs on the user's own key. Also NOT bundled:
+// host/port/base URLs (TV always serves 127.0.0.1) and STREAM_PREFETCH_KB
+// (low RAM).
 const PASS_THROUGH_ENV = [
   'CATALOG_COUNTRY',
   'CATALOG_LANGUAGE',
@@ -73,12 +75,42 @@ const { readUserConfig, resolveSetting } = createRequire(import.meta.url)(
 );
 const userConfig = readUserConfig();
 const setting = (k) => resolveSetting(k, process.env, userConfig);
+// Starter key for automatic first-run setup (node-bootstrap/starter-login.js),
+// from TELEMEDIA_STARTER_API_ID/_HASH or <signing dir>/starter.properties
+// (apiId=…, apiHash=…), kept outside the repo. Without it the app uses the
+// phone setup page instead.
+function starterKey() {
+  let apiId = process.env.TELEMEDIA_STARTER_API_ID;
+  let apiHash = process.env.TELEMEDIA_STARTER_API_HASH;
+  const file = join(
+    process.env.TELEMEDIA_SIGNING_DIR || join(homedir(), 'Documents', 'telemedia-signing'),
+    'starter.properties',
+  );
+  if (!apiId && !apiHash && existsSync(file)) {
+    const props = Object.fromEntries(
+      readFileSync(file, 'utf8')
+        .split(/\r?\n/)
+        .filter((l) => l.includes('=') && !l.trim().startsWith('#'))
+        .map((l) => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim()]),
+    );
+    ({ apiId, apiHash } = props);
+  }
+  if (!apiId && !apiHash) return undefined;
+  if (!/^\d{3,12}$/.test(apiId || '') || !/^[0-9a-f]{32}$/i.test(apiHash || '')) {
+    throw new Error('starter key: apiId must be a number and apiHash 32 hex characters');
+  }
+  return { apiId, apiHash: apiHash.toLowerCase() };
+}
+
 const defaults = {
   env: Object.fromEntries(PASS_THROUGH_ENV.filter((k) => setting(k)).map((k) => [k, setting(k)])),
+  starter: starterKey(),
 };
 writeFileSync(join(stage, 'defaults.json'), JSON.stringify(defaults));
 console.log(
-  `Bundled defaults: no Telegram credentials (users enter their own)` +
+  (defaults.starter
+    ? 'Bundled defaults: starter key for automatic setup'
+    : 'Bundled defaults: no Telegram credentials (phone setup page)') +
     (Object.keys(defaults.env).length ? ` + ${Object.keys(defaults.env).join(', ')}` : ''),
 );
 

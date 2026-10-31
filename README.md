@@ -29,10 +29,11 @@ npm run tv:deploy -- <tv-ip>:5555   # build the TV app and install it over adb
 **Releases:** `npm run tv:release -- X.Y.Z` builds the signed APK locally, or push
 a tag `vX.Y.Z` for GitHub Actions (see [`tv-app/README.md`](tv-app/README.md)).
 
-**No `.env` and no API keys in the code or the APK.** Each user enters their own
-Telegram API ID/hash (my.telegram.org): on the TV the setup page on the phone
-fetches it automatically after a phone-number login, on a PC
-in `npm run addon:login`, which saves it to a per-user config file. Metadata
+**No `.env` and no API keys in the code.** Each user runs on their own
+Telegram API ID/hash (my.telegram.org). On the TV it is fetched automatically:
+after one QR login with a starter key bundled at build time (kept outside the
+repo), or else through a setup page on the phone. On a PC, enter it in
+`npm run addon:login`, which saves it to a per-user config file. Metadata
 comes from keyless services (Cinemeta, Wikidata, JustWatch).
 
 Origin: a port of the Kodi add-on `plugin.video.telemedia` 2.5.8.

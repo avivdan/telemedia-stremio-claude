@@ -13,18 +13,21 @@ starts by itself when the TV turns on.
 ## Setup (about 2 minutes, once)
 
 1. **Install the app** on the TV (see *Installing the APK* below).
-2. **Connect your Telegram account (once).** Open Telemedia and scan the QR code
-   with your phone camera (phone on the same Wi-Fi as the TV). On the page that
-   opens, enter your phone number, then the login code Telegram sends you (chat
-   *Telegram*, blue tick). The TV gets your own Telegram API key from
-   my.telegram.org by itself, creating an app named "Telemedia TV" if your
-   account has none. Already have an api_id/api_hash? Paste them on that page
-   instead. If Telegram says "too many tries", wait a few hours.
-3. **Two QR codes appear.** Scan both with your phone, in any order:
+2. **Open Telemedia. Two QR codes appear.** Scan both with your phone, in any order:
    - **Telegram:** in the Telegram app, *Settings → Devices → Link Desktop Device*.
      If you use a two-step verification password, type it on the TV.
+     The TV then gets your own Telegram API key from my.telegram.org by itself
+     (about a minute; it creates an app named "Telemedia TV" if your account has
+     none). You'll see a "Web login code" message in your *Telegram* chat: the
+     TV reads it, nothing to do.
    - **Stremio:** with the phone camera. Confirm on the page that opens (log in
      to Stremio there if asked). This adds Telemedia to your Stremio account.
+
+   If that automatic step fails, or if your build has no starter key (see *For
+   developers*), the TV shows a setup code instead: scan it with the phone camera
+   (same Wi-Fi as the TV), enter your phone number and the login code Telegram
+   sends you, or paste an api_id/api_hash you already have. If Telegram says
+   "too many tries", wait a few hours.
 
 That's it. Open any movie or episode in Stremio and pick a **Telemedia** stream.
 
@@ -105,13 +108,27 @@ npm run tv:deploy -- 192.168.0.114:5555     # bundle addon, build APK, adb insta
 
 **Keys.** None are built into the APK. Titles, Hebrew search and the
 streaming-service rows come from Cinemeta, Wikidata and JustWatch, all keyless.
-For Telegram, every user has their **own** API ID/hash (stored in the app's
-private `config.json`) and logs in with their own QR scan. First-run setup
-(`node-bootstrap/setup-server.js` + `my-telegram.js`) serves a page on
-`<tv-ip>:7002` while setup runs: phone number → my.telegram.org login code →
-the TV reads the keys from `/apps` (creating the app if needed). Without a LAN
-address the screen falls back to typing the keys on the TV. Each user is on their own Telegram rate limits, and the APK is
-safe to publish.
+For Telegram, the addon always runs on the user's **own** API ID/hash (stored in
+the app's private `config.json`), so each user is on their own rate limits.
+
+First-run setup has two paths:
+- **Starter key (automatic)**, `node-bootstrap/starter-login.js`: the build
+  bundles one shared api_id/api_hash, used only during setup. The user scans
+  a QR login made with it; the TV reads the account's phone number, asks
+  my.telegram.org for a code, reads that code from the *Telegram* chat (777000),
+  reads or creates the user's own app (`my-telegram.js`), then logs in under the
+  own key by approving its login token from the starter session and logs the
+  starter session out. If the switch fails, the user scans a second QR code.
+  Put the key in `~/Documents/telemedia-signing/starter.properties`
+  (`apiId=…` and `apiHash=…`, outside the repo) or `TELEMEDIA_STARTER_API_ID` /
+  `TELEMEDIA_STARTER_API_HASH`. Create it as its own app on my.telegram.org,
+  ideally from a spare account: it is public inside the APK, and if Telegram
+  bans it only new setups stop (they fall back to the phone page).
+- **Phone page** (`setup-server.js` + `my-telegram.js`), without a starter key or
+  when the automatic path fails: a page on `<tv-ip>:7002` takes the phone number
+  and the my.telegram.org login code, then the TV reads the keys from `/apps`
+  (creating the app if needed). Without a LAN address the screen falls back to
+  typing the keys on the TV.
 
 **Adding the addon to Stremio** (`node-bootstrap/stremio-link.js`): Stremio has
 no API for another app to install an addon into the Stremio app. Its

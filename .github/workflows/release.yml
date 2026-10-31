@@ -3,10 +3,11 @@
 # (Alternative without CI: `npm run tv:release -- 0.3.0` on the machine that
 # holds the signing key, then attach the APK to a release by hand.)
 #
-# The APK contains no Telegram credentials — each user enters their own in
-# the app. Only the signing key is needed, as repository secrets:
+# Repository secrets:
 #   TELEMEDIA_KEYSTORE_BASE64               release keystore, base64
 #   TELEMEDIA_KEYSTORE_PASSWORD, TELEMEDIA_KEY_ALIAS, TELEMEDIA_KEY_PASSWORD
+#   TELEMEDIA_STARTER_API_ID, TELEMEDIA_STARTER_API_HASH   optional: starter
+#     key for automatic first-run setup (without it: phone setup page)
 
 name: Release TV app
 
@@ -61,6 +62,9 @@ jobs:
         run: node tv-app/scripts/fetch-libnode.mjs
 
       - name: Stage addon bundle
+        env:
+          TELEMEDIA_STARTER_API_ID: ${{ secrets.TELEMEDIA_STARTER_API_ID }}
+          TELEMEDIA_STARTER_API_HASH: ${{ secrets.TELEMEDIA_STARTER_API_HASH }}
         run: node tv-app/scripts/bundle-node.mjs
 
       - name: Decode signing key

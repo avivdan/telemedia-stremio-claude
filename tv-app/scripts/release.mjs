@@ -7,8 +7,9 @@
 //   storePassword=…  keyAlias=…  keyPassword=…
 // Signing dir: TELEMEDIA_SIGNING_DIR, else ~/Documents/telemedia-signing.
 //
-// Output: tv-app/release/Telemedia-v<version>.apk (signature verified). The APK
-// contains no Telegram credentials — every user enters their own in the app.
+// Output: tv-app/release/Telemedia-v<version>.apk (signature verified).
+// Optional <signing dir>/starter.properties (apiId=…, apiHash=…) bundles the
+// starter key for automatic first-run setup (see bundle-node.mjs).
 
 import { execSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';

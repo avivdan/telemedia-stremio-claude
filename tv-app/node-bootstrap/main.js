@@ -6,10 +6,13 @@
 // Flow:
 //   1. Start a control server on 127.0.0.1:7001 that the Kotlin UI polls
 //      (GET /status, POST /password, POST /exit).
-//   2. No apiId/apiHash      → state "need_config": phone setup page on
-//                              :7002 (setup-server.js) gets the user's own
-//                              keys from my.telegram.org, or the UI's manual
-//                              form saves them and restarts us.
+//   2. No apiId/apiHash      → with a bundled starter key: QR login with it,
+//                              then fetch the user's own keys and log in
+//                              under them (starter-login.js). Otherwise, or
+//                              if that fails, state "need_config": phone
+//                              setup page on :7002 (setup-server.js) gets the
+//                              user's own keys from my.telegram.org, or the
+//                              UI's manual form saves them and restarts us.
 //   3. No session            → QR login (scan with Telegram on phone),
 //                              save session to config.json.
 //   4. Session present       → verify it (revoked → back to QR login), set
@@ -26,6 +29,7 @@ const http = require('http');
 const path = require('path');
 const stremioLink = require('./stremio-link');
 const setupServer = require('./setup-server');
+const starterLogin = require('./starter-login');
 
 const CONTROL_PORT = 7001;
 const cfgPath = process.argv[2];
@@ -38,8 +42,9 @@ let stremioStatus = { state: 'idle' };
 let resolveAddonReady;
 const addonReady = new Promise((r) => { resolveAddonReady = r; });
 
-// Build-time addon settings (bundle-node.mjs). Never credentials: each user
-// enters their own Telegram API ID/hash in the setup screen (config.json).
+// Build-time settings (bundle-node.mjs): addon env defaults and, optionally,
+// the starter key used only for first-run setup (starter-login.js). The addon
+// itself always runs on the user's own API ID/hash (config.json).
 function readDefaults() {
   try {
     return JSON.parse(fs.readFileSync(path.join(__dirname, 'defaults.json'), 'utf8'));
@@ -105,6 +110,12 @@ function startControlServer() {
   server.listen(CONTROL_PORT, '127.0.0.1');
 }
 
+// Two-step verification password, typed on the TV (POST /password).
+function askPassword(hint) {
+  setStatus({ state: 'need_password', hint: hint || '' });
+  return new Promise((resolve) => { passwordResolver = resolve; });
+}
+
 // ---------------------------------------------------------------------------
 // QR login — TV shows tg://login?token=..., user scans it in Telegram on
 // their phone (Settings → Devices → Link Desktop Device).
@@ -129,10 +140,7 @@ async function qrLogin(cfg) {
           expires,
         });
       },
-      password: async (hint) => {
-        setStatus({ state: 'need_password', hint: hint || '' });
-        return new Promise((resolve) => { passwordResolver = resolve; });
-      },
+      password: askPassword,
       onError: async (err) => {
         setStatus({ state: 'error', error: err.message });
         return true; // stop; UI offers a restart
@@ -268,10 +276,34 @@ async function main() {
   startControlServer();
   startStremioPairing();
   const cfg = readConfig();
+  let setupFailure = null;
+
+  const starter = readDefaults().starter;
+  if ((!cfg.apiId || !cfg.apiHash) && starter) {
+    try {
+      const keys = await starterLogin.run({
+        starter,
+        onQr: (qrUrl, expires) => setStatus({ state: 'qr', qrUrl, expires }),
+        askPassword,
+        onStep: (step) => setStatus({ state: 'auto_setup', setupStep: step }),
+      });
+      const stored = readConfig();
+      delete stored.session;
+      writeConfig({ ...stored, ...keys });
+      console.log('[bootstrap] own API keys saved' + (keys.session ? ' with session' : ''));
+      Object.assign(cfg, keys);
+    } catch (err) {
+      // Fall through to the phone setup page.
+      console.log('[bootstrap] automatic setup failed: ' + (err && err.message));
+      setupFailure = String(err && err.message ? err.message : err);
+    }
+  }
 
   if (!cfg.apiId || !cfg.apiHash) {
     // Wait for the phone setup page (or the UI's manual form, which restarts us).
-    setStatus({ state: 'need_config' });
+    setStatus(setupFailure
+      ? { state: 'need_config', setupStep: 'error', setupError: setupFailure }
+      : { state: 'need_config' });
     const keys = await setupServer.run({
       onStep: (step, detail) => setStatus({ state: 'need_config', setupStep: step, setupError: detail }),
     });

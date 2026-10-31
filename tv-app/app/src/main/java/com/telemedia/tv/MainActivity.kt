@@ -218,6 +218,10 @@ class MainActivity : Activity() {
             "starting", "logging_in" -> "Connecting to Telegram…"
             "starting_addon" -> "Starting addon…"
             "need_config" -> if (phoneSetup) setupText(s!!) else getString(R.string.setup_instructions)
+            "auto_setup" -> getString(
+                if (s!!.optString("setupStep") == "switching") R.string.auto_setup_switching
+                else R.string.auto_setup_working,
+            )
             "qr" -> if (pairing) "Scan both codes with your phone:" else "Scan with Telegram on your phone:"
             "need_password" -> "Two-step verification password required" +
                 s!!.optString("hint").let { if (it.isNotBlank()) " (hint: $it)" else "" }
