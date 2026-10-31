@@ -53,12 +53,22 @@ Disney+ and Apple TV+ in Israel, with Telemedia streams.
 
 ## Installing the APK
 
-With developer options and network debugging enabled on the TV:
+Download `Telemedia-vX.Y.Z.apk` from the project's
+[GitHub Releases](https://github.com/avivdan/telemedia-stremio-claude/releases).
+
+**On the TV, with the Downloader app** (free on Google Play):
+1. Open Downloader and enter the release APK link.
+2. Allow Downloader to install apps when Android asks (once).
+3. Install, then open **Telemedia**.
+
+Or from a computer, with network debugging enabled on the TV:
 
 ```bash
 adb connect <tv-ip>:5555
-adb install -r app-release.apk
+adb install -r Telemedia-vX.Y.Z.apk
 ```
+
+Updates install over the previous version and keep your login.
 
 ---
 
@@ -91,8 +101,9 @@ streaming-service rows come from Cinemeta, Wikidata and JustWatch, all keyless.
 The only credential is the Telegram API ID/hash, which identifies the *app*.
 Telegram expects each app to embed its own, so don't reuse another app's
 published ID. `tv:bundle` takes `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` from
-the environment (use a CI secret for releases), falling back to `addon/.env`
-for local builds. Without them, the app shows a form asking for them.
+the environment (use a CI secret for releases), falling back to the desktop
+addon's user config file (written by `npm run login`) for local builds.
+Without them, the app shows a form asking for them.
 
 The Telegram *session* is never bundled; each TV logs in with its own QR code.
 An APK built with these values contains them, so publish only builds made
@@ -107,6 +118,20 @@ syncs them. So the TV shows a QR code from Stremio's own link login
 addon collection, appends or refreshes Telemedia, writes it back and verifies,
 then logs that session out. It never writes unless it read a non-empty list.
 Fallback: the "Open Stremio Add-ons" button plus the URL.
+
+**Releasing** (`.github/workflows/release.yml`): push a tag `vX.Y.Z`. CI runs the
+addon tests, stages the bundle with the Telegram ID from secrets, builds the APK
+signed with the release key (versionName from the tag, versionCode =
+major·10000 + minor·100 + patch), and attaches `Telemedia-vX.Y.Z.apk` to a GitHub
+Release. It refuses to run if any secret is missing. Required repository
+secrets: `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `TELEMEDIA_KEYSTORE_BASE64`,
+`TELEMEDIA_KEYSTORE_PASSWORD`, `TELEMEDIA_KEY_ALIAS`, `TELEMEDIA_KEY_PASSWORD`.
+
+The release keystore is not in the repo. Keep it and its password backed up:
+Android only installs updates signed with the same key. Local builds
+(`tv:deploy`) use the debug key unless `TELEMEDIA_KEYSTORE*` is set, and a
+device can't switch between debug- and release-signed builds without an
+uninstall.
 
 Logs: `adb logcat -s TelemediaNode NodeService`
 

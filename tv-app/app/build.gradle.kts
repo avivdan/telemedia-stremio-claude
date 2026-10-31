@@ -3,6 +3,17 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// Release version from the environment (CI passes the git tag, e.g. "0.3.0");
+// versionCode = major*10000 + minor*100 + patch so updates always increase it.
+val appVersionName: String = System.getenv("TELEMEDIA_VERSION")?.removePrefix("v") ?: "0.3.0"
+val appVersionCode: Int = appVersionName.split(".").map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
+    .let { (it.getOrElse(0) { 0 } * 10000) + (it.getOrElse(1) { 0 } * 100) + it.getOrElse(2) { 0 } }
+
+// Release signing key from the environment (CI secrets). Without it, release
+// builds fall back to the debug key — fine for local testing, but a device
+// can't update between debug- and release-signed builds.
+val releaseKeystore: String? = System.getenv("TELEMEDIA_KEYSTORE")
+
 android {
     namespace = "com.telemedia.tv"
     compileSdk = 35
@@ -11,8 +22,8 @@ android {
         applicationId = "com.telemedia.tv"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         ndk {
             // Many TV boxes are still 32-bit ARM. x86_64 = emulator.
@@ -26,11 +37,21 @@ android {
         }
     }
 
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("TELEMEDIA_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("TELEMEDIA_KEY_ALIAS")
+                keyPassword = System.getenv("TELEMEDIA_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Sideload build: sign with the debug key unless you set up your own.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (releaseKeystore != null) "release" else "debug")
         }
     }
 

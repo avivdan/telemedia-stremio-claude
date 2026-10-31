@@ -26,4 +26,11 @@ npm run tv:libnode          # one-time: download the Android Node.js runtime
 npm run tv:deploy -- <tv-ip>:5555   # build the TV app and install it over adb
 ```
 
+**Releases:** pushing a tag `vX.Y.Z` builds the signed APK in GitHub Actions
+and publishes it under Releases (see [`tv-app/README.md`](tv-app/README.md)).
+
+**No `.env` and no third-party API keys.** `npm run addon:login` saves the
+Telegram login to a per-user config file. Metadata comes from keyless services
+(Cinemeta, Wikidata, JustWatch).
+
 Origin: a port of the Kodi add-on `plugin.video.telemedia` 2.5.8.
