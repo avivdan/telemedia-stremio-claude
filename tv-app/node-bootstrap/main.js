@@ -12,20 +12,27 @@
 //   4. Session present       → verify it (revoked → back to QR login), set
 //                              env vars, load the addon (dist/src/index.js),
 //                              state "running" once /manifest.json answers.
-//   5. First catalog/meta/stream request from Stremio → stremioConnected=true
-//      in config.json (the UI stops prompting the user to add the addon).
+//   5. In parallel: Stremio pairing QR (stremio-link.js) adds the addon to the
+//      user's Stremio account. stremioConnected=true in config.json once that
+//      succeeds or Stremio is seen requesting a catalog/meta/stream.
 
 'use strict';
 
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
+const stremioLink = require('./stremio-link');
 
 const CONTROL_PORT = 7001;
 const cfgPath = process.argv[2];
 
 let status = { state: 'starting' };
 let passwordResolver = null;
+// Pairing with the user's Stremio account (see stremio-link.js), reported
+// alongside the main state so the UI can show both QR codes at once.
+let stremioStatus = { state: 'idle' };
+let resolveAddonReady;
+const addonReady = new Promise((r) => { resolveAddonReady = r; });
 
 // Build-time defaults (bundle-node.mjs copies API ID/hash from the repo .env).
 // Values saved from the TV UI in config.json take precedence.
@@ -70,7 +77,7 @@ function startControlServer() {
     };
 
     if (req.method === 'GET' && req.url === '/status') {
-      return send(200, status);
+      return send(200, { ...status, stremio: stremioStatus });
     }
 
     if (req.method === 'POST' && req.url === '/password') {
@@ -168,11 +175,13 @@ function waitForAddon(port) {
       .get({ host: '127.0.0.1', port, path: '/manifest.json', timeout: 2000 }, (res) => {
         res.resume();
         if (res.statusCode === 200) {
+          const manifestUrl = `http://127.0.0.1:${port}/manifest.json`;
           setStatus({
             state: 'running',
-            manifestUrl: `http://127.0.0.1:${port}/manifest.json`,
+            manifestUrl,
             stremioConnected: !!readConfig().stremioConnected,
           });
+          resolveAddonReady({ manifestUrl });
         } else retry();
       })
       .on('error', retry);
@@ -229,14 +238,36 @@ function startAddon(cfg) {
 function watchStremio(addon) {
   if (!addon.addonEvents || readConfig().stremioConnected) return;
   addon.addonEvents.once('stremio-request', () => {
-    writeConfig({ ...readConfig(), stremioConnected: true });
-    if (status.state === 'running') setStatus({ ...status, stremioConnected: true });
+    markStremioConnected();
     console.log('[bootstrap] Stremio is using the addon');
   });
 }
 
+function markStremioConnected() {
+  if (!readConfig().stremioConnected) writeConfig({ ...readConfig(), stremioConnected: true });
+  if (status.state === 'running') setStatus({ ...status, stremioConnected: true });
+}
+
+// Runs in parallel with Telegram login, so both QR codes can be scanned in one go.
+function startStremioPairing() {
+  stremioLink
+    .run({
+      isConnected: () => !!readConfig().stremioConnected,
+      whenAddonReady: () => addonReady,
+      markConnected: markStremioConnected,
+      onStatus: (s) => {
+        stremioStatus = s;
+        console.log('[bootstrap] stremio=' + s.state);
+      },
+    })
+    .catch((err) => {
+      stremioStatus = { state: 'error', error: String(err && err.message ? err.message : err) };
+    });
+}
+
 async function main() {
   startControlServer();
+  startStremioPairing();
   const cfg = readConfig();
 
   if (!cfg.apiId || !cfg.apiHash) {

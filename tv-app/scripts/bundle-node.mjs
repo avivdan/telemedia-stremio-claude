@@ -30,7 +30,7 @@ rmSync(stage, { recursive: true, force: true });
 mkdirSync(stage, { recursive: true });
 
 cpSync(join(addonRoot, 'dist', 'src'), join(stage, 'dist', 'src'), { recursive: true });
-cpSync(join(here, '..', 'node-bootstrap', 'main.js'), join(stage, 'main.js'));
+cpSync(join(here, '..', 'node-bootstrap'), stage, { recursive: true });
 
 const pkg = JSON.parse(readFileSync(join(addonRoot, 'package.json'), 'utf8'));
 const prodPkg = {

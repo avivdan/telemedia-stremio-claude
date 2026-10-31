@@ -48,13 +48,4 @@ object AppConfig {
         cfg.remove("session")
         write(ctx, cfg)
     }
-
-    /** Sets a boolean flag; returns true if it was not set before. */
-    fun setFlagOnce(ctx: Context, key: String): Boolean {
-        val cfg = read(ctx)
-        if (cfg.optBoolean(key)) return false
-        cfg.put(key, true)
-        write(ctx, cfg)
-        return true
-    }
 }

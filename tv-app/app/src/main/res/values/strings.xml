@@ -9,6 +9,9 @@
     <string name="password_hint">Two-step verification password</string>
     <string name="send">Send</string>
     <string name="qr_description">Telegram login QR code</string>
+    <string name="telegram_qr_caption">Telegram — in the Telegram app:\nSettings → Devices → Link Desktop Device</string>
+    <string name="stremio_qr_caption">Stremio — scan with the phone camera, then confirm</string>
+    <string name="stremio_qr_description">Stremio pairing QR code</string>
     <string name="add_to_stremio">Open Stremio Add-ons</string>
     <string name="open_stremio">Open Stremio</string>
     <string name="get_stremio">Get Stremio</string>
