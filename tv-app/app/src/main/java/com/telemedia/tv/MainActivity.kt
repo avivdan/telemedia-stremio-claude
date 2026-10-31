@@ -40,6 +40,8 @@ class MainActivity : Activity() {
     private lateinit var stremioButton: Button
     private lateinit var setupGroup: View
     private lateinit var setupQr: ImageView
+    private lateinit var restartButton: Button
+    private lateinit var logoutButton: Button
     private var shownQrUrl: String? = null
     private var shownStremioLink: String? = null
     private var setupFocused = false
@@ -105,8 +107,10 @@ class MainActivity : Activity() {
                 }
             }
         }
-        findViewById<Button>(R.id.restart).setOnClickListener { restartNode("Restarting…") }
-        findViewById<Button>(R.id.logout).setOnClickListener {
+        restartButton = findViewById(R.id.restart)
+        logoutButton = findViewById(R.id.logout)
+        restartButton.setOnClickListener { restartNode("Restarting…") }
+        logoutButton.setOnClickListener {
             AppConfig.clearSession(this)
             restartNode("Logged out. Restarting…")
         }
@@ -140,8 +144,12 @@ class MainActivity : Activity() {
         val state = s?.optString("state") ?: "offline"
         passwordGroup.visibility = if (state == "need_password") View.VISIBLE else View.GONE
 
-        // First-run setup: link to my.telegram.org, cursor in the api_id field.
-        setupGroup.visibility = if (state == "need_config") View.VISIBLE else View.GONE
+        // First-run setup: link to my.telegram.org, cursor in the api_id field
+        // (keyboard stays closed so it doesn't cover the QR code).
+        val setup = state == "need_config"
+        setupGroup.visibility = if (setup) View.VISIBLE else View.GONE
+        restartButton.visibility = if (setup) View.GONE else View.VISIBLE
+        logoutButton.visibility = if (setup) View.GONE else View.VISIBLE
         if (state == "need_config" && !setupFocused) {
             setupFocused = true
             apiId.requestFocus()
