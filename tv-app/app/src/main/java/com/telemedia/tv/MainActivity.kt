@@ -3,6 +3,7 @@ package com.telemedia.tv
 import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.ConnectivityManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -16,6 +17,7 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import org.json.JSONObject
+import java.net.Inet4Address
 
 /**
  * Setup + status screen. Polls the Node control server and shows:
@@ -24,6 +26,7 @@ import org.json.JSONObject
  * account → running.
  */
 private const val MY_TELEGRAM_URL = "https://my.telegram.org/apps"
+private const val SETUP_PORT = 7002 // node-bootstrap/setup-server.js
 
 class MainActivity : Activity() {
 
@@ -42,6 +45,9 @@ class MainActivity : Activity() {
     private lateinit var setupQr: ImageView
     private lateinit var restartButton: Button
     private lateinit var logoutButton: Button
+    private lateinit var saveButton: Button
+    private var phoneSetup = false
+    private var wasSetup = false
     private var shownQrUrl: String? = null
     private var shownStremioLink: String? = null
     private var setupFocused = false
@@ -83,17 +89,18 @@ class MainActivity : Activity() {
         stremioButton.setOnClickListener { stremioAction() }
         setupGroup = findViewById(R.id.setup_group)
         setupQr = findViewById(R.id.setup_qr)
-        setupQr.setImageBitmap(qrBitmap(MY_TELEGRAM_URL, 400))
+        // Setup runs from the phone (page served by the TV, see setup-server.js).
+        // Without a LAN address, fall back to my.telegram.org + typing on the TV.
+        val setupUrl = lanAddress()?.let { "http://$it:$SETUP_PORT/" }
+        phoneSetup = setupUrl != null
+        setupQr.setImageBitmap(qrBitmap(setupUrl ?: MY_TELEGRAM_URL, 480))
+        findViewById<TextView>(R.id.setup_caption).setText(
+            if (phoneSetup) R.string.setup_phone_caption else R.string.setup_qr_caption,
+        )
+        saveButton = findViewById(R.id.save)
+        loadCredentials()
 
-        val cfg = AppConfig.read(this)
-        apiId.setText(cfg.optString("apiId"))
-        apiHash.setText(cfg.optString("apiHash"))
-        // Visible while typing it the first time; masked once saved.
-        if (cfg.optString("apiHash").isNotBlank()) {
-            apiHash.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        }
-
-        findViewById<Button>(R.id.save).setOnClickListener {
+        saveButton.setOnClickListener {
             val id = apiId.text.toString().trim()
             val hash = apiHash.text.toString().trim()
             when {
@@ -133,6 +140,24 @@ class MainActivity : Activity() {
         handler.removeCallbacks(poll)
     }
 
+    private fun loadCredentials() {
+        val cfg = AppConfig.read(this)
+        apiId.setText(cfg.optString("apiId"))
+        apiHash.setText(cfg.optString("apiHash"))
+        // Visible while typing it the first time; masked once saved.
+        if (cfg.optString("apiHash").isNotBlank()) {
+            apiHash.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+    }
+
+    // The TV's own Wi-Fi/Ethernet IPv4 address, for the phone setup page.
+    private fun lanAddress(): String? {
+        val cm = getSystemService(ConnectivityManager::class.java) ?: return null
+        val props = cm.getLinkProperties(cm.activeNetwork) ?: return null
+        return props.linkAddresses.map { it.address }
+            .firstOrNull { it is Inet4Address && !it.isLoopbackAddress }?.hostAddress
+    }
+
     private fun restartNode(message: String) {
         showNotice(message, 3000)
         shownQrUrl = null
@@ -150,10 +175,18 @@ class MainActivity : Activity() {
         setupGroup.visibility = if (setup) View.VISIBLE else View.GONE
         restartButton.visibility = if (setup) View.GONE else View.VISIBLE
         logoutButton.visibility = if (setup) View.GONE else View.VISIBLE
-        if (state == "need_config" && !setupFocused) {
+        // Phone setup: no typing on the TV, so hide the manual form meanwhile.
+        val manualForm = if (setup && phoneSetup) View.GONE else View.VISIBLE
+        apiId.visibility = manualForm
+        apiHash.visibility = manualForm
+        saveButton.visibility = manualForm
+        if (setup && !phoneSetup && !setupFocused) {
             setupFocused = true
             apiId.requestFocus()
         }
+        // Keys arrived from the phone: show them in the (now visible) form.
+        if (wasSetup && !setup && state != "offline") loadCredentials()
+        wasSetup = setup
 
         // Telegram QR
         telegramGroup.visibility = if (state == "qr") View.VISIBLE else View.GONE
@@ -184,7 +217,7 @@ class MainActivity : Activity() {
             "offline" -> "Starting addon service…"
             "starting", "logging_in" -> "Connecting to Telegram…"
             "starting_addon" -> "Starting addon…"
-            "need_config" -> getString(R.string.setup_instructions)
+            "need_config" -> if (phoneSetup) setupText(s!!) else getString(R.string.setup_instructions)
             "qr" -> if (pairing) "Scan both codes with your phone:" else "Scan with Telegram on your phone:"
             "need_password" -> "Two-step verification password required" +
                 s!!.optString("hint").let { if (it.isNotBlank()) " (hint: $it)" else "" }
@@ -220,6 +253,17 @@ class MainActivity : Activity() {
             else -> "Telemedia is running ✔\n\nLast step: scan the Stremio code with your phone camera " +
                 "and confirm.\n$manual"
         }
+    }
+
+    private fun setupText(s: JSONObject): String {
+        val step = when (s.optString("setupStep")) {
+            "code_sent" -> getString(R.string.setup_code_sent)
+            "reading", "creating" -> getString(R.string.setup_working)
+            "error" -> "Setup problem: " + s.optString("setupError") + "\nTry again on your phone."
+            else -> null
+        }
+        val intro = getString(R.string.setup_instructions_phone)
+        return if (step != null) "$intro\n\n$step" else intro
     }
 
     private fun errorText(error: String): String = when {

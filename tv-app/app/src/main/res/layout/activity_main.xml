@@ -163,6 +163,7 @@
                 android:visibility="gone">
 
                 <TextView
+                    android:id="@+id/setup_caption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/setup_qr_caption"
@@ -171,8 +172,8 @@
 
                 <ImageView
                     android:id="@+id/setup_qr"
-                    android:layout_width="180dp"
-                    android:layout_height="180dp"
+                    android:layout_width="240dp"
+                    android:layout_height="240dp"
                     android:layout_marginTop="8dp"
                     android:contentDescription="@string/setup_qr_description" />
             </LinearLayout>

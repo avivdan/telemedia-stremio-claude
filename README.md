@@ -30,7 +30,8 @@ npm run tv:deploy -- <tv-ip>:5555   # build the TV app and install it over adb
 a tag `vX.Y.Z` for GitHub Actions (see [`tv-app/README.md`](tv-app/README.md)).
 
 **No `.env` and no API keys in the code or the APK.** Each user enters their own
-Telegram API ID/hash (my.telegram.org): on the TV in the setup screen, on a PC
+Telegram API ID/hash (my.telegram.org): on the TV the setup page on the phone
+fetches it automatically after a phone-number login, on a PC
 in `npm run addon:login`, which saves it to a per-user config file. Metadata
 comes from keyless services (Cinemeta, Wikidata, JustWatch).
 

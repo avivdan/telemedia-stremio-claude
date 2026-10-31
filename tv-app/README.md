@@ -13,12 +13,13 @@ starts by itself when the TV turns on.
 ## Setup (about 2 minutes, once)
 
 1. **Install the app** on the TV (see *Installing the APK* below).
-2. **Get your Telegram API key (once).** Open Telemedia. The first screen has a QR
-   code: scan it to open **my.telegram.org** on your phone. Log in with your
-   phone number, go to *API development tools* and create an app (any name and
-   short name). Enter the **App api_id** and **App api_hash** on the TV and choose
-   **Save and start**. Typing is easiest with the Google TV / Android TV remote
-   app on your phone.
+2. **Connect your Telegram account (once).** Open Telemedia and scan the QR code
+   with your phone camera (phone on the same Wi-Fi as the TV). On the page that
+   opens, enter your phone number, then the login code Telegram sends you (chat
+   *Telegram*, blue tick). The TV gets your own Telegram API key from
+   my.telegram.org by itself, creating an app named "Telemedia TV" if your
+   account has none. Already have an api_id/api_hash? Paste them on that page
+   instead. If Telegram says "too many tries", wait a few hours.
 3. **Two QR codes appear.** Scan both with your phone, in any order:
    - **Telegram:** in the Telegram app, *Settings → Devices → Link Desktop Device*.
      If you use a two-step verification password, type it on the TV.
@@ -104,9 +105,12 @@ npm run tv:deploy -- 192.168.0.114:5555     # bundle addon, build APK, adb insta
 
 **Keys.** None are built into the APK. Titles, Hebrew search and the
 streaming-service rows come from Cinemeta, Wikidata and JustWatch, all keyless.
-For Telegram, every user enters their **own** API ID/hash in the first-run
-setup screen (stored in the app's private `config.json`) and logs in with their
-own QR scan. Each user is on their own Telegram rate limits, and the APK is
+For Telegram, every user has their **own** API ID/hash (stored in the app's
+private `config.json`) and logs in with their own QR scan. First-run setup
+(`node-bootstrap/setup-server.js` + `my-telegram.js`) serves a page on
+`<tv-ip>:7002` while setup runs: phone number → my.telegram.org login code →
+the TV reads the keys from `/apps` (creating the app if needed). Without a LAN
+address the screen falls back to typing the keys on the TV. Each user is on their own Telegram rate limits, and the APK is
 safe to publish.
 
 **Adding the addon to Stremio** (`node-bootstrap/stremio-link.js`): Stremio has

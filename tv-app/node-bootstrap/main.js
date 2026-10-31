@@ -6,7 +6,10 @@
 // Flow:
 //   1. Start a control server on 127.0.0.1:7001 that the Kotlin UI polls
 //      (GET /status, POST /password, POST /exit).
-//   2. No apiId/apiHash      → state "need_config", wait for UI + restart.
+//   2. No apiId/apiHash      → state "need_config": phone setup page on
+//                              :7002 (setup-server.js) gets the user's own
+//                              keys from my.telegram.org, or the UI's manual
+//                              form saves them and restarts us.
 //   3. No session            → QR login (scan with Telegram on phone),
 //                              save session to config.json.
 //   4. Session present       → verify it (revoked → back to QR login), set
@@ -22,6 +25,7 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const stremioLink = require('./stremio-link');
+const setupServer = require('./setup-server');
 
 const CONTROL_PORT = 7001;
 const cfgPath = process.argv[2];
@@ -266,8 +270,16 @@ async function main() {
   const cfg = readConfig();
 
   if (!cfg.apiId || !cfg.apiHash) {
+    // Wait for the phone setup page (or the UI's manual form, which restarts us).
     setStatus({ state: 'need_config' });
-    return; // stay alive for the control server
+    const keys = await setupServer.run({
+      onStep: (step, detail) => setStatus({ state: 'need_config', setupStep: step, setupError: detail }),
+    });
+    const stored = readConfig();
+    delete stored.session; // a session belongs to the api id that created it
+    writeConfig({ ...stored, apiId: keys.apiId, apiHash: keys.apiHash });
+    console.log('[bootstrap] API keys saved from phone setup');
+    Object.assign(cfg, keys);
   }
 
   if (cfg.session) {

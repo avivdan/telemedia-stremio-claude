@@ -10,7 +10,11 @@
     <string name="send">Send</string>
     <string name="qr_description">Telegram login QR code</string>
     <string name="setup_qr_caption">Scan with your phone → my.telegram.org</string>
-    <string name="setup_qr_description">QR code for my.telegram.org</string>
+    <string name="setup_phone_caption">Scan with your phone camera</string>
+    <string name="setup_qr_description">Setup QR code</string>
+    <string name="setup_instructions_phone">Welcome! One-time setup:\n\n1. Scan the code on the right with your phone (on the same Wi-Fi as the TV).\n2. On the page that opens, enter your phone number, then the login code Telegram sends you.\n\nThe TV does the rest.</string>
+    <string name="setup_code_sent">✔ Code sent. Enter it on your phone (Telegram chat “Telegram”).</string>
+    <string name="setup_working">Getting your API keys from Telegram…</string>
     <string name="setup_instructions">Welcome! One-time setup:\n\n1. On your phone, open my.telegram.org (scan the code on the right), log in with your phone number, then API development tools → create an app (any name).\n2. Enter the App api_id and api_hash on the right, then Save and start.\n\nTip: select a field and type with the Google TV / Android TV remote app on your phone.</string>
     <string name="telegram_qr_caption">Telegram — in the Telegram app:\nSettings → Devices → Link Desktop Device</string>
     <string name="stremio_qr_caption">Stremio — scan with the phone camera, then confirm</string>
