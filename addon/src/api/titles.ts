@@ -2,15 +2,12 @@
 //
 //   Cinemeta (Stremio's own metadata service) → English title, year
 //   Wikidata (by IMDb id, SPARQL)             → Hebrew + English labels and aliases
-//   TMDB (only if TMDB_API_KEY is set)        → extra translations/alternative titles
 //
-// Sources are queried in parallel; any of them may fail without breaking the
+// Sources are queried in parallel; either may fail without breaking the
 // lookup. Results are cached for 24h — titles rarely change, while Stremio
 // re-requests streams every time an episode page opens.
 
 import { http } from './client';
-import * as tmdb from './tmdb';
-import { config } from '../config';
 import { makeCache, cached } from '../utils/cache';
 import { log } from '../utils/logger';
 import { mergeTitleSources, parseYear, type TitleInfo } from '../search/matching';
@@ -25,12 +22,8 @@ const cache = makeCache<TitleInfo>(1000, TTL_MS);
 
 export function titleInfoForImdb(type: 'movie' | 'series', imdbId: string): Promise<TitleInfo> {
   return cached(cache, `${type}:${imdbId}`, async () => {
-    const results = await Promise.allSettled([
-      fromCinemeta(type, imdbId),
-      fromWikidata(imdbId),
-      fromTmdb(imdbId),
-    ]);
-    const names = ['cinemeta', 'wikidata', 'tmdb'];
+    const results = await Promise.allSettled([fromCinemeta(type, imdbId), fromWikidata(imdbId)]);
+    const names = ['cinemeta', 'wikidata'];
     results.forEach((r, i) => {
       if (r.status === 'rejected') log.warn(`titles: ${names[i]} failed for ${imdbId}:`, (r.reason as Error).message);
     });
@@ -83,11 +76,4 @@ async function fromWikidata(imdbId: string): Promise<Partial<TitleInfo>> {
     );
   const year = rows.map((r) => Number(r.year?.value)).find((y) => y > 0);
   return { titles: pick('label'), altTitles: pick('alias'), year };
-}
-
-async function fromTmdb(imdbId: string): Promise<Partial<TitleInfo> | null> {
-  if (!config.tmdb.enabled) return null;
-  const found = await tmdb.findByImdb(imdbId);
-  if (!found) return null;
-  return tmdb.tmdbTitleInfo(found.tmdbId, found.type === 'movie' ? 'movie' : 'tv');
 }

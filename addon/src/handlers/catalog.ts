@@ -1,16 +1,16 @@
 // Catalog handler. Maps directly to the top-level sections of default.py:
 //
-//   main_menu()         → My Groups / Kids / Hebrew / World (+ provider rows with a TMDB key)
+//   main_menu()         → My Groups / Kids / Hebrew / World + streaming-service rows
 //   movies_menu() / tv_show_menu() → not ported: Stremio's Cinemeta already
 //                         shows popular movies/series, and we stream for those ids
 //   my_groups()         → listDialogs()
 //   chat catalog        → messages in a specific chat (Kids/Hebrew/World etc.)
 
 import { config } from '../config';
-import * as tmdb from '../api/tmdb';
 import * as tg from '../api/telegram';
 import { hebrewSearch } from '../api/hebrewSearch';
-import { HEBREW_SEARCH_CATALOG } from '../manifest';
+import { popularOnProvider } from '../api/justwatch';
+import { HEBREW_SEARCH_CATALOG, PROVIDERS } from '../manifest';
 import { hasHebrew } from '../search/matching';
 import { chatToPreview, messageToPreview } from '../mappers/catalogMapper';
 import { makeCache, cached } from '../utils/cache';
@@ -51,17 +51,18 @@ async function resolveCatalog(
     case 'telemedia-world':
       return listChatVideos(String(config.chats.world), extra?.search ?? '');
     default: {
-      // telemedia-prov-<providerId>-<movie|series> (TMDB key only). Unknown
-      // ids — e.g. the removed Movies/TV catalogs, still listed in manifests
-      // cached by Stremio — return nothing.
+      // telemedia-prov-<providerId>-<movie|series>. Unknown ids — e.g. the
+      // removed Movies/TV catalogs, still listed in manifests cached by
+      // Stremio — return nothing.
       const m = /^telemedia-prov-(\d+)-(movie|series)$/.exec(id);
-      if (m && config.tmdb.enabled) {
-        const providerId = Number(m[1]);
-        const kind = m[2] === 'movie' ? 'movie' : 'tv';
-        const page = 1 + Math.floor(Number(extra?.skip ?? 0) / 20);
-        return tmdb.discoverByProvider(kind, providerId, page);
+      const provider = m && PROVIDERS.find((p) => p.id === Number(m[1]));
+      if (!provider) return [];
+      try {
+        return await popularOnProvider(provider.jw, m![2] as 'movie' | 'series', Number(extra?.skip ?? 0));
+      } catch (err) {
+        log.warn('provider catalog failed', id, (err as Error).message);
+        return [];
       }
-      return [];
     }
   }
 }

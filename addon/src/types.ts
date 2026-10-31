@@ -20,15 +20,6 @@ export interface TgChatSummary {
   photoUrl?: string;
 }
 
-export type CatalogKind =
-  | 'tg-dialogs'
-  | 'tg-chat'
-  | 'tmdb-movies'
-  | 'tmdb-tv'
-  | 'tg-kids'
-  | 'tg-hebrew'
-  | 'tg-world';
-
 export interface StremioMetaPreview {
   id: string;
   type: 'movie' | 'series' | 'tv';

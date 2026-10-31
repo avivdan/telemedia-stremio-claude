@@ -13,27 +13,25 @@ starts by itself when the TV turns on.
 ## Setup (about 2 minutes, once)
 
 1. **Install the app** on the TV (see *Installing the APK* below).
-2. **Open Telemedia.** A QR code appears.
-3. **Scan it** with Telegram on your phone:
-   *Settings → Devices → Link Desktop Device*.
-   If you use a two-step verification password, type it on the TV.
-4. **Add it to Stremio.** The app opens Stremio's Add-ons page for you.
-   Choose **Add addon**, enter
-
-   ```
-   http://127.0.0.1:7000/manifest.json
-   ```
-
-   and press **Install**.
-
-   You only do this once per Stremio account. Stremio remembers its addons,
-   so on another TV with the same Stremio account, installing the Telemedia
-   app is enough.
+2. **Open Telemedia.** Two QR codes appear. Scan both with your phone, in any order:
+   - **Telegram:** in the Telegram app, *Settings → Devices → Link Desktop Device*.
+     If you use a two-step verification password, type it on the TV.
+   - **Stremio:** with the phone camera. Confirm on the page that opens (log in
+     to Stremio there if asked). This adds Telemedia to your Stremio account.
 
 That's it. Open any movie or episode in Stremio and pick a **Telemedia** stream.
 
+If the Stremio code doesn't work, use **Open Stremio Add-ons** in the app:
+choose **Add addon**, enter `http://127.0.0.1:7000/manifest.json`, then **Install**.
+Either way it's once per Stremio account: another TV on the same account only
+needs the Telemedia app.
+
 **Search in Hebrew:** type a Hebrew name in Stremio's search (פאודה, האחרונים מבינינו, …).
-Results appear in the **חיפוש בעברית** rows.
+Results appear in the **חיפוש בעברית** rows. With a connected keyboard, type
+from the phone's remote app instead (the TV keyboard layout may stay English).
+
+**Streaming-service rows:** popular titles on Netflix, Prime Video, HBO Max,
+Disney+ and Apple TV+ in Israel, with Telemedia streams.
 
 ## Everyday use
 
@@ -88,25 +86,27 @@ npm run tv:deploy -- 192.168.0.114:5555     # bundle addon, build APK, adb insta
 `tv:deploy` uses `JAVA_HOME`/`ANDROID_HOME`, falling back to
 `%LOCALAPPDATA%\Android\{jdk-17,Sdk}`.
 
-**Keys.** Users never enter any:
-- Titles come from Cinemeta + Wikidata, which need no key.
-- The Telegram API ID/hash identifies the *app*. Telegram expects each app to
-  embed its own, so don't reuse another app's published ID. `tv:bundle` takes
-  `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` from the environment (use a CI secret
-  for releases), falling back to `addon/.env` for local builds. Without them,
-  the app shows a form asking for them.
-- `TMDB_API_KEY` is optional and baked in the same way. It adds the
-  streaming-provider rows.
+**Keys.** No third-party API keys at all. Titles, Hebrew search and the
+streaming-service rows come from Cinemeta, Wikidata and JustWatch, all keyless.
+The only credential is the Telegram API ID/hash, which identifies the *app*.
+Telegram expects each app to embed its own, so don't reuse another app's
+published ID. `tv:bundle` takes `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` from
+the environment (use a CI secret for releases), falling back to `addon/.env`
+for local builds. Without them, the app shows a form asking for them.
 
 The Telegram *session* is never bundled; each TV logs in with its own QR code.
 An APK built with these values contains them, so publish only builds made
 with the project's own Telegram ID.
 
-**Why "add to Stremio" can't be automatic:** Stremio offers no way for another
-app to install an addon. Its `stremio://` install links are rewritten to
-`https://`, which a local server can't serve, and its `http` link handler only
-accepts magnet links. The app opens Stremio's Add-ons page instead, and learns
-it's connected from the first catalog, meta or stream request Stremio makes.
+**Adding the addon to Stremio** (`node-bootstrap/stremio-link.js`): Stremio has
+no API for another app to install an addon into the Stremio app. Its
+`stremio://` links are rewritten to `https://`, and its `http` handler only
+takes magnets. But addons live in the user's Stremio *account*, and the app
+syncs them. So the TV shows a QR code from Stremio's own link login
+(`link.stremio.com`). Once the user confirms it, the app reads the account's
+addon collection, appends or refreshes Telemedia, writes it back and verifies,
+then logs that session out. It never writes unless it read a non-empty list.
+Fallback: the "Open Stremio Add-ons" button plus the URL.
 
 Logs: `adb logcat -s TelemediaNode NodeService`
 

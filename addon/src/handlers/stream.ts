@@ -3,17 +3,14 @@
 // we emit Stremio `stream` objects whose URLs target our in-process proxy
 // (handlers/proxy.ts).
 //
-// Four id flavours accepted:
+// Three id flavours accepted:
 //   tg:<chatId>:<messageId>
 //   tgchat:<chatId>:ep<messageId>  (rare — Stremio constructs this from series meta)
-//   tmdb:<movie|series>:<id>       → search the user's dialogs for a matching file
-//   tt<imdbid>                     → treat as TMDB series/movie title lookup
+//   tt<imdbid>[:<s>:<e>]           → title lookup, then Telegram search
 
 import { Api } from 'telegram';
 import * as tg from '../api/telegram';
-import * as tmdb from '../api/tmdb';
 import { titleInfoForImdb } from '../api/titles';
-import { config } from '../config';
 import { decodeMsgId } from '../utils/ids';
 import { extractMedia } from '../api/telegram';
 import { mediaToStream } from '../mappers/streamMapper';
@@ -46,7 +43,6 @@ export async function streamHandler({ type, id }: StreamArgs) {
     }
   }
 
-  if (id.startsWith('tmdb:')) return { streams: await tmdbStreams(id) };
   if (/^tt\d+/.test(id)) return { streams: await imdbStreams(type, id) };
   return { streams: [] };
 }
@@ -65,26 +61,6 @@ async function imdbStreams(type: string, id: string): Promise<StremioStream[]> {
     return await searchByTitles(info, season, episode);
   } catch (err) {
     log.warn('imdbStreams failed', id, (err as Error).message);
-    return [];
-  }
-}
-
-// Handles both `tmdb:movie:<id>` and `tmdb:series:<id>[:<season>:<episode>]`.
-// These ids only come from the TMDB provider catalogs (TMDB key set).
-async function tmdbStreams(id: string): Promise<StremioStream[]> {
-  if (!config.tmdb.enabled) return [];
-  try {
-    const parts = id.split(':');
-    const kind = parts[1] === 'movie' ? 'movie' : 'tv';
-    const tmdbId = Number(parts[2]);
-    const season = parts[3] ? Number(parts[3]) : undefined;
-    const episode = parts[4] ? Number(parts[4]) : undefined;
-
-    const info = await tmdb.tmdbTitleInfo(tmdbId, kind);
-    log.info('tmdbStreams', { id, ...info, season, episode });
-    return await searchByTitles(info, season, episode);
-  } catch (err) {
-    log.warn('tmdbStreams failed', id, (err as Error).message);
     return [];
   }
 }

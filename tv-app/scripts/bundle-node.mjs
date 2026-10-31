@@ -52,12 +52,12 @@ writeFileSync(join(stage, 'package.json'), JSON.stringify(prodPkg, null, 2));
 //    embed its own), so users only scan a QR code. For release builds set
 //    TELEGRAM_API_ID / TELEGRAM_API_HASH in the build environment (CI secret);
 //    local builds fall back to addon/.env.
-//  - optional addon settings (TMDB key, chat ids, ...), same precedence.
+//  - optional addon settings (catalog country, chat ids, ...), same precedence.
 // Deliberately NOT bundled: TELEGRAM_SESSION (each device logs in itself),
 // host/port/base URLs (TV always serves 127.0.0.1), STREAM_PREFETCH_KB (low RAM).
 const PASS_THROUGH_ENV = [
-  'TMDB_API_KEY',
-  'TMDB_LANGUAGE',
+  'CATALOG_COUNTRY',
+  'CATALOG_LANGUAGE',
   'TG_KIDS_CHAT_ID',
   'TG_HEBREW_GROUP',
   'TG_WORLD_GROUP',

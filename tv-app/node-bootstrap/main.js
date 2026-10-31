@@ -200,7 +200,7 @@ function waitForAddon(port) {
 function startAddon(cfg) {
   const port = String(cfg.port || 7000);
   const base = 'http://127.0.0.1:' + port;
-  // Addon settings bundled from the repo .env (TMDB keys, chat ids, ...).
+  // Addon settings bundled from the repo .env (catalog country, chat ids, ...).
   for (const [k, v] of Object.entries(readDefaults().env || {})) {
     if (process.env[k] === undefined) process.env[k] = v;
   }

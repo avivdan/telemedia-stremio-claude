@@ -41,8 +41,8 @@ Stremio clients refuse plain-HTTP addons unless the address is loopback
 | `ADDON_HOST` / `ADDON_PORT` | `127.0.0.1` / `7000` | bind address |
 | `PUBLIC_BASE_URL` | `http://127.0.0.1:7000` | base URL Stremio is given |
 | `STREAM_BASE_URL` | `PUBLIC_BASE_URL` | base URL written into stream links |
-| `TMDB_API_KEY` | — (optional) | adds streaming-provider catalogs, `tmdb:` ids, and extra search titles |
-| `TMDB_LANGUAGE` | `he` | language of the provider catalogs |
+| `CATALOG_COUNTRY` | `IL` | streaming-service rows: which country's availability |
+| `CATALOG_LANGUAGE` | `he` | streaming-service rows: title language |
 | `TG_KIDS_CHAT_ID`, `TG_HEBREW_GROUP`, `TG_WORLD_GROUP` | Kodi channels | `0` hides the catalog |
 | `STREAM_CHUNK_KB` | `1024` | `upload.getFile` request size (power of two, max 1024) |
 | `STREAM_PARALLEL` | `2` | requests in flight per stream |
@@ -51,17 +51,19 @@ Stremio clients refuse plain-HTTP addons unless the address is loopback
 
 Empty values (`KEY=`) override defaults with `''`, so comment out unused keys instead.
 
+**No third-party API keys.** The only credential is the Telegram API ID/hash,
+which identifies the app itself. All metadata comes from keyless public services:
+Cinemeta, Wikidata and JustWatch.
+
 ## How a stream request is resolved
 
-`/stream/<type>/<id>.json` with `tt…` (Cinemeta) or `tmdb:…` ids:
+`/stream/<type>/<id>.json` with `tt…` (Cinemeta) ids:
 
-1. **Titles** (`api/titles.ts → titleInfoForImdb`, no API key needed), cached
-   for 24h. Three sources, queried in parallel; any one can fail:
+1. **Titles** (`api/titles.ts → titleInfoForImdb`), cached for 24h. Two
+   sources, queried in parallel; either can fail:
    - **Cinemeta** (`v3-cinemeta.strem.io/meta/<type>/<tt>.json`): English title, year
    - **Wikidata** (one SPARQL query on IMDb id `P345`): Hebrew + English labels
      (main titles) and aliases ("La casa de papel", "TLoU"), year
-   - **TMDB**, only if `TMDB_API_KEY` is set: translations plus alternative titles
-     for IL/US/GB
 
    Merged in that order (`mergeTitleSources`). Up to 3 aliases are searched.
    Only Hebrew/Latin-script titles are kept.
@@ -118,13 +120,13 @@ triggers Telegram throttling.
 | חיפוש בעברית (movie + series, search-only) | Hebrew text in Stremio's search box → Wikidata label search (`api/hebrewSearch.ts`) → items with IMDb ids, typed by Wikidata class. Non-Hebrew queries are ignored (Cinemeta covers them). Cached 1h. No key. |
 | My Groups | your Telegram dialogs |
 | Kids / Hebrew / World | fixed channels from the Kodi addon |
-| Netflix / Prime / HBO / Disney+ / Apple TV+ | TMDB discover by watch provider; **only with `TMDB_API_KEY`** (no keyless watch-provider source) |
+| Netflix / Prime / HBO Max / Disney+ / Apple TV+ | JustWatch popular titles per service (`api/justwatch.ts`), keyless GraphQL used by its website. Follows `CATALOG_COUNTRY` (default Israel), titles in `CATALOG_LANGUAGE`. IMDb-linked items only, cursor-paged 50 at a time, cached 1h. |
 
 There are no generic Movies/TV catalogs. Stremio's built-in Cinemeta already
 shows popular titles and handles English search, and Telemedia provides
 streams for those `tt…` ids.
 
-The manifest scopes resources per id prefix: `meta` only for `tg:`/`tgchat:`/`tmdb:`,
+The manifest scopes resources per id prefix: `meta` only for `tg:`/`tgchat:`,
 so Cinemeta always owns `tt…` details (names, episode lists), while `stream`
 also covers `tt`. Bump `version` when catalogs change; Stremio then offers
 "Upgrade" on the addon page.
@@ -137,16 +139,16 @@ src/
   manifest.ts           Stremio manifest
   config.ts             .env → typed config
   api/telegram.ts       gramjs client, search, fetchMessage, parallel iterDownload
-  api/titles.ts         keyless titles: Cinemeta + Wikidata (+ TMDB if configured)
+  api/titles.ts         keyless titles: Cinemeta + Wikidata
   api/hebrewSearch.ts   Hebrew search box → Wikidata → IMDb ids
-  api/tmdb.ts           optional TMDB: provider catalogs, find-by-IMDb, tmdbTitleInfo
+  api/justwatch.ts      streaming-service rows (JustWatch, keyless)
   api/auth.ts           CLI login (npm run login)
   handlers/stream.ts    stream resolution (titles → queries → search → classify → rank)
   handlers/proxy.ts     Range proxy
   handlers/catalog.ts   catalogs
-  handlers/meta.ts      meta for tg:/tmdb: ids
+  handlers/meta.ts      meta for tg: ids
   search/matching.ts    pure matching/ranking (unit-tested)
-  mappers/              Telegram/TMDB → Stremio objects
+  mappers/              Telegram → Stremio objects
   utils/                cache, logger, ids, errors
 scripts/                login, search, list-chat + ad-hoc debug scripts
 test/                   node:test unit tests (npm test)
@@ -169,6 +171,10 @@ npm test                                            # unit tests
 - **Copyright-stripped channels:** Telegram returns placeholders without media
   in some regions. Nothing to do client-side.
 - **Single user:** one `.env` means one Telegram account.
+- **Unofficial endpoints:** JustWatch's GraphQL and Stremio's link and
+  addon-collection APIs (used by the TV app) are undocumented, so they can change.
+  The rows and the auto-install fail soft: an empty row, or the manual
+  install fallback.
 - **Not ported from Kodi:** Trakt, Real-Debrid/Drive resolvers, Kodi
   installers, resume positions (Stremio tracks progress), and the
   forward-to-bot fallback (`TG_BOT_USERNAME` is not wired).

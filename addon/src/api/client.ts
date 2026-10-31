@@ -1,5 +1,5 @@
 // Thin HTTP client mirroring resources/modules/client.py (base_header + get_html).
-// Used for TMDB and any plain-HTTP resolver we might add later.
+// Used for Cinemeta, Wikidata, JustWatch and any plain-HTTP resolver we add later.
 //
 // The Kodi file juggled urllib / urllib2 / cookielib for Python 2 vs 3. Here we
 // just wrap axios and expose the same header contract.
@@ -31,4 +31,18 @@ export async function getJson<T>(url: string, cfg: AxiosRequestConfig = {}): Pro
   }
 }
 
-export const http = { getJson };
+export async function postJson<T>(url: string, body: unknown, cfg: AxiosRequestConfig = {}): Promise<T> {
+  try {
+    const { data } = await axios.post<T>(url, body, {
+      timeout: 20_000,
+      ...cfg,
+      headers: { ...baseHeaders, 'Content-Type': 'application/json', ...(cfg.headers ?? {}) },
+    });
+    return data;
+  } catch (err) {
+    log.warn('HTTP error:', url, (err as Error).message);
+    throw err;
+  }
+}
+
+export const http = { getJson, postJson };

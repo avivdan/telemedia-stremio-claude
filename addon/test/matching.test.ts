@@ -136,10 +136,10 @@ test('parseYear: Cinemeta year / releaseInfo formats', () => {
   assert.equal(parseYear(undefined), undefined);
 });
 
-test('mergeTitleSources: Cinemeta + Wikidata + optional TMDB', () => {
+test('mergeTitleSources: Cinemeta + Wikidata', () => {
   const cinemeta = { titles: ['Money Heist'], year: 2017 };
   const wikidata = { titles: ['בית הנייר', 'Money Heist'], altTitles: ['La casa de papel'], year: undefined };
-  const merged = mergeTitleSources([cinemeta, wikidata, null]); // TMDB disabled
+  const merged = mergeTitleSources([cinemeta, wikidata]);
   assert.deepEqual(merged, {
     titles: ['Money Heist', 'בית הנייר'],
     altTitles: ['La casa de papel'],

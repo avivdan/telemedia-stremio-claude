@@ -1,18 +1,17 @@
 // Stremio manifest. Catalogs mirror default.py's main_menu():
 //   My Groups / Kids / Hebrew / World
-// Plus per-provider discovery (Netflix/Prime/HBO/Disney+/Apple TV+) when a
-// TMDB key is configured.
+// Plus per-provider discovery (Netflix/Prime/HBO/Disney+/Apple TV+) from
+// JustWatch — no API key needed.
 
-import { config } from './config';
-
-// TMDB watch-provider ids. Same across regions but availability differs;
-// `watch_region` is set at query time (see src/api/tmdb.ts).
+// `id` is part of the catalog id (kept stable from the earlier TMDB provider
+// ids so manifests cached by Stremio keep working); `jw` is the JustWatch
+// package code. Availability follows CATALOG_COUNTRY (see api/justwatch.ts).
 export const PROVIDERS = [
-  { id: 8, name: 'Netflix' },
-  { id: 9, name: 'Prime Video' },
-  { id: 1899, name: 'HBO Max' },
-  { id: 337, name: 'Disney+' },
-  { id: 350, name: 'Apple TV+' },
+  { id: 8, name: 'Netflix', jw: 'nfx' },
+  { id: 9, name: 'Prime Video', jw: 'prv' },
+  { id: 1899, name: 'HBO Max', jw: 'mxx' },
+  { id: 337, name: 'Disney+', jw: 'dnp' },
+  { id: 350, name: 'Apple TV+', jw: 'atp' },
 ] as const;
 
 function providerCatalogs() {
@@ -37,11 +36,11 @@ function providerCatalogs() {
 
 export const HEBREW_SEARCH_CATALOG = 'telemedia-he-search';
 
-const ownIdPrefixes = ['tg:', 'tgchat:', ...(config.tmdb.enabled ? ['tmdb:'] : [])];
+const ownIdPrefixes = ['tg:', 'tgchat:'];
 
 export const manifest = {
   id: 'community.telemedia',
-  version: '0.2.0',
+  version: '0.3.0',
   name: 'Telemedia',
   description:
     'Stream videos from your Telegram chats (port of Kodi plugin.video.telemedia).',
@@ -89,10 +88,9 @@ export const manifest = {
       name: 'World - Telemedia',
       extra: [{ name: 'search', isRequired: false }],
     },
-    // Streaming provider catalogs — TMDB `/discover` filtered by watch provider.
-    // Need a TMDB key (no keyless source for watch providers). Streams still
-    // come from Telegram (title-based search at stream time).
-    ...(config.tmdb.enabled ? providerCatalogs() : []),
+    // Streaming provider catalogs (JustWatch popular titles per service).
+    // Streams still come from Telegram (title-based search at stream time).
+    ...providerCatalogs(),
   ],
   behaviorHints: {
     configurable: false,
