@@ -6,3 +6,11 @@ dist
 dev.log
 package-lock.json
 .claude
+
+# Secrets: they live outside the repo (~/Documents/telemedia-signing), these
+# rules only catch copies dropped in here by mistake.
+*.jks
+*.keystore
+*.apk
+signing.properties
+starter.properties
