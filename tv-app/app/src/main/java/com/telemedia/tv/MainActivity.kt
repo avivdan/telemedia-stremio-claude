@@ -41,6 +41,7 @@ class MainActivity : Activity() {
     private lateinit var passwordGroup: View
     private lateinit var password: EditText
     private lateinit var stremioButton: Button
+    private lateinit var stremioManual: TextView
     private lateinit var setupGroup: View
     private lateinit var setupQr: ImageView
     private lateinit var restartButton: Button
@@ -48,6 +49,7 @@ class MainActivity : Activity() {
     private lateinit var saveButton: Button
     private var phoneSetup = false
     private var wasSetup = false
+    private var lastState: String? = null
     private var shownQrUrl: String? = null
     private var shownStremioLink: String? = null
     private var setupFocused = false
@@ -87,6 +89,7 @@ class MainActivity : Activity() {
         password = findViewById(R.id.password)
         stremioButton = findViewById(R.id.open_stremio)
         stremioButton.setOnClickListener { stremioAction() }
+        stremioManual = findViewById(R.id.stremio_manual)
         setupGroup = findViewById(R.id.setup_group)
         setupQr = findViewById(R.id.setup_qr)
         // Setup runs from the phone (page served by the TV, see setup-server.js).
@@ -175,8 +178,9 @@ class MainActivity : Activity() {
         setupGroup.visibility = if (setup) View.VISIBLE else View.GONE
         restartButton.visibility = if (setup) View.GONE else View.VISIBLE
         logoutButton.visibility = if (setup) View.GONE else View.VISIBLE
-        // Phone setup: no typing on the TV, so hide the manual form meanwhile.
-        val manualForm = if (setup && phoneSetup) View.GONE else View.VISIBLE
+        // The key fields are only for typing keys on the TV (no phone setup)
+        // and for fixing keys Telegram rejected; setup fills them in otherwise.
+        val manualForm = if ((setup && !phoneSetup) || state == "error") View.VISIBLE else View.GONE
         apiId.visibility = manualForm
         apiHash.visibility = manualForm
         saveButton.visibility = manualForm
@@ -186,7 +190,9 @@ class MainActivity : Activity() {
         }
         // Keys arrived from the phone: show them in the (now visible) form.
         if (wasSetup && !setup && state != "offline") loadCredentials()
+        if (state == "error" && lastState != "error") loadCredentials()
         wasSetup = setup
+        lastState = state
 
         // Telegram QR
         telegramGroup.visibility = if (state == "qr") View.VISIBLE else View.GONE
@@ -230,12 +236,16 @@ class MainActivity : Activity() {
             else -> state
         }
         status.text = if (notice != null && System.currentTimeMillis() < noticeUntil) notice else text
-        if (state != "running") stremioButton.visibility = View.GONE
+        if (state != "running") {
+            stremioButton.visibility = View.GONE
+            stremioManual.visibility = View.GONE
+        }
     }
 
     // Also sets up the Stremio button for the current situation.
     private fun runningText(s: JSONObject, stremioState: String, stremioError: String?): String {
         stremioButton.visibility = View.VISIBLE
+        stremioManual.visibility = View.GONE
         if (Stremio.installedPackage(this) == null) {
             stremioButton.setText(R.string.get_stremio)
             stremioAction = { Stremio.openStoreListing(this) }
@@ -246,16 +256,17 @@ class MainActivity : Activity() {
             stremioAction = { Stremio.open(this) }
             return "Telemedia is running ✔\nAdded to Stremio — nothing else to do."
         }
-        // Manual fallback stays available next to the QR code.
+        // Manual fallback stays available on the right, next to the QR code.
         stremioButton.setText(R.string.add_to_stremio)
         stremioAction = { Stremio.openAddonsPage(this) }
-        val manual = "Or in Stremio → Add-ons → Add addon, enter\n${s.optString("manifestUrl")}"
+        stremioManual.text = "Or in Stremio → Add-ons → Add addon, enter\n${s.optString("manifestUrl")}"
+        stremioManual.visibility = View.VISIBLE
+        // Kept short so the Stremio code below it fits on screen.
         return when (stremioState) {
-            "installing" -> "Telemedia is running ✔\n\nAdding Telemedia to your Stremio account…"
-            "error" -> "Telemedia is running ✔\n\nCouldn't add to Stremio automatically" +
-                (stremioError?.let { ": $it" } ?: "") + "\n$manual"
-            else -> "Telemedia is running ✔\n\nLast step: scan the Stremio code with your phone camera " +
-                "and confirm.\n$manual"
+            "installing" -> "Telemedia is running ✔\nAdding Telemedia to your Stremio account…"
+            "error" -> "Telemedia is running ✔\nCouldn't add to Stremio automatically" +
+                (stremioError?.let { ": $it" } ?: "")
+            else -> "Telemedia is running ✔\nLast step: scan the Stremio code with your phone camera and confirm."
         }
     }
 

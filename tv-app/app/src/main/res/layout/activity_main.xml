@@ -34,14 +34,6 @@
                 android:textColor="#D0D7DE"
                 android:textSize="20sp" />
 
-            <Button
-                android:id="@+id/open_stremio"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/add_to_stremio"
-                android:visibility="gone" />
-
             <!-- Telegram login and Stremio pairing QR codes, side by side -->
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -121,12 +113,29 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Right: settings -->
+        <!-- Right: actions and settings -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
+
+            <Button
+                android:id="@+id/open_stremio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/add_to_stremio"
+                android:visibility="gone" />
+
+            <!-- Manual way to add the addon, next to the Stremio code -->
+            <TextView
+                android:id="@+id/stremio_manual"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:textColor="#8B949E"
+                android:textSize="14sp"
+                android:visibility="gone" />
 
             <EditText
                 android:id="@+id/api_id"
