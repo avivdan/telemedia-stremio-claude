@@ -12,6 +12,7 @@
 
 import { execSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -102,9 +103,18 @@ function starterKey() {
   return { apiId, apiHash: apiHash.toLowerCase() };
 }
 
+// Scrambled so the key is not plain text in the APK (nor found by key
+// scanners). Not encryption: the app unscrambles it (starter-login.js).
+function scramble(key) {
+  if (!key) return undefined;
+  const data = Buffer.from(JSON.stringify(key));
+  const pad = randomBytes(data.length);
+  return Buffer.concat([pad, data.map((b, i) => b ^ pad[i])]).reverse().toString('base64');
+}
+
 const defaults = {
   env: Object.fromEntries(PASS_THROUGH_ENV.filter((k) => setting(k)).map((k) => [k, setting(k)])),
-  starter: starterKey(),
+  starter: scramble(starterKey()),
 };
 writeFileSync(join(stage, 'defaults.json'), JSON.stringify(defaults));
 console.log(

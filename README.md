@@ -24,13 +24,18 @@ Watch movies and series from your Telegram channels and groups in
 [Stremio](https://play.google.com/store/apps/details?id=com.stremio.one) app
 on it, and Telegram on your phone.
 
-1. **Download.** On the TV, install the free **Downloader** app from Google
-   Play. Open it, and in the box that asks for a URL or code, type this
-   address (no code needed):
-   `github.com/avivdan/telemedia-stremio-claude/releases/latest`.
-   On the page that opens, choose **`Telemedia-vX.Y.Z.apk`** (not "Source code").
-2. **Install.** Allow Downloader to install apps when Android asks (once),
-   then **Install**.
+1. **Get the app.** The APK (`Telemedia-vX.Y.Z.apk`) is shared privately:
+   ask whoever gave you Telemedia. It is not on the Releases page.
+2. **Put it on the TV and install**, whichever is easiest:
+   - **From your phone:** install the free **Send Files to TV** app on the
+     phone and on the TV, send the APK, then open it on the TV.
+   - **USB stick:** copy the APK to it, plug it into the TV, open it with a
+     file manager app (e.g. *File Commander* from Google Play).
+   - **A link** (e.g. Google Drive): type it into the free **Downloader** app
+     on the TV.
+
+   Android asks once to allow installing apps from that app: allow it, then
+   **Install**.
 3. **Open Telemedia.** Two QR codes appear.
 4. **Scan both with your phone:**
    - **Telegram:** in the Telegram app, *Settings → Devices → Link Desktop
@@ -113,7 +118,8 @@ npm run tv:release -- X.Y.Z         # signed release APK in tv-app/release/
 **Keys and secrets.** No keys are in the code. The release build reads the
 signing key and the starter key from a folder outside the repo
 (`~/Documents/telemedia-signing`), see [`tv-app/README.md`](tv-app/README.md).
-Movie and series info comes from keyless services (Cinemeta, Wikidata,
+The starter key is stored scrambled in the APK, and the APK is shared
+privately, not on the Releases page. Movie and series info comes from keyless services (Cinemeta, Wikidata,
 JustWatch).
 
 Origin: a port of the Kodi add-on `plugin.video.telemedia` 2.5.8.

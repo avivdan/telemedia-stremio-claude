@@ -19,6 +19,21 @@ const CODE_TIMEOUT = 90_000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// defaults.json "starter" → { apiId, apiHash }; reverses scramble() in
+// bundle-node.mjs. Undefined when the build has no starter key.
+function unscramble(text) {
+  if (!text) return undefined;
+  try {
+    const bytes = Buffer.from(text, 'base64').reverse();
+    const half = bytes.length / 2;
+    const data = bytes.subarray(half).map((b, i) => b ^ bytes[i]);
+    return JSON.parse(data.toString('utf8'));
+  } catch {
+    console.log('[starter] bundled starter key is unreadable, using the phone setup page');
+    return undefined;
+  }
+}
+
 // "…This is your login code:\nAbC1dEf2GhI…" → "AbC1dEf2GhI"
 function parseCode(text) {
   return (String(text || '').match(/login code:?\s*([A-Za-z0-9_-]{6,})/i) || [])[1] || null;
@@ -135,4 +150,4 @@ async function run({ starter, onQr, askPassword, onStep }) {
   }
 }
 
-module.exports = { run, parseCode };
+module.exports = { run, parseCode, unscramble };

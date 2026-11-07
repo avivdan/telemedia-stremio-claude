@@ -64,13 +64,16 @@ Disney+ and Apple TV+ in Israel, with Telemedia streams.
 
 ## Installing the APK
 
-Download `Telemedia-vX.Y.Z.apk` from the project's
-[GitHub Releases](https://github.com/avivdan/telemedia-stremio-claude/releases).
+The APK (`Telemedia-vX.Y.Z.apk`) is shared privately, not on GitHub Releases:
+it carries the starter key (see *For developers*). Ways to get it onto the TV:
 
-**On the TV, with the Downloader app** (free on Google Play):
-1. Open Downloader and enter the release APK link.
-2. Allow Downloader to install apps when Android asks (once).
-3. Install, then open **Telemedia**.
+- **Send Files to TV** (free, Google Play) on the phone and the TV: send the
+  APK over Wi-Fi, open it on the TV.
+- **USB stick** + a file manager app on the TV (e.g. *File Commander*).
+- **A private link** (e.g. Google Drive) typed into the **Downloader** app.
+
+Android asks once to allow installing apps from that app: allow, then
+**Install** and open **Telemedia**.
 
 Or from a computer, with network debugging enabled on the TV:
 
@@ -122,9 +125,12 @@ First-run setup has two paths:
   starter session out. If the switch fails, the user scans a second QR code.
   Put the key in `~/Documents/telemedia-signing/starter.properties`
   (`apiId=…` and `apiHash=…`, outside the repo) or `TELEMEDIA_STARTER_API_ID` /
-  `TELEMEDIA_STARTER_API_HASH`. Create it as its own app on my.telegram.org,
-  ideally from a spare account: it is public inside the APK, and if Telegram
-  bans it only new setups stop (they fall back to the phone page).
+  `TELEMEDIA_STARTER_API_HASH`. The build stores it scrambled in
+  `defaults.json` (`scramble()` in `bundle-node.mjs`), so it is not plain text
+  in the APK; that stops casual reading and key scanners, not someone who
+  reads the code. Treat it as visible to anyone with the APK: share the APK
+  privately, or use an app from a spare account. If Telegram bans the key,
+  only new setups stop (they fall back to the phone page).
 - **Phone page** (`setup-server.js` + `my-telegram.js`), without a starter key or
   when the automatic path fails: a page on `<tv-ip>:7002` takes the phone number
   and the my.telegram.org login code, then the TV reads the keys from `/apps`
@@ -147,7 +153,8 @@ minor·100 + patch.
 - **Locally, no secrets:** `npm run tv:release -- 0.3.0` builds and verifies
   `tv-app/release/Telemedia-v0.3.0.apk`, using `signing.properties` + the
   keystore from `~/Documents/telemedia-signing` (or `TELEMEDIA_SIGNING_DIR`).
-  Then attach the APK to a GitHub Release.
+  Share the APK privately; with a starter key in it, don't attach it to a
+  public GitHub Release.
 - **GitHub Actions** (`.github/workflows/release.yml`): push a tag `vX.Y.Z`.
   It needs the keystore as repository secrets (`TELEMEDIA_KEYSTORE_BASE64`,
   `TELEMEDIA_KEYSTORE_PASSWORD`, `TELEMEDIA_KEY_ALIAS`, `TELEMEDIA_KEY_PASSWORD`)

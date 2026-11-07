@@ -278,7 +278,7 @@ async function main() {
   const cfg = readConfig();
   let setupFailure = null;
 
-  const starter = readDefaults().starter;
+  const starter = starterLogin.unscramble(readDefaults().starter);
   if ((!cfg.apiId || !cfg.apiHash) && starter) {
     try {
       const keys = await starterLogin.run({
