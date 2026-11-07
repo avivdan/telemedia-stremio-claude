@@ -16,18 +16,36 @@ Watch movies and series from your Telegram channels and groups in
   own Telegram API key (it gets that by itself). Nothing goes anywhere except
   Telegram and Stremio.
 
-## Setup
+## Download and use
 
-1. Install `Telemedia-vX.Y.Z.apk` from
-   [Releases](https://github.com/avivdan/telemedia-stremio-claude/releases) on
-   the TV (details in [`tv-app/README.md`](tv-app/README.md#installing-the-apk)).
-2. Open **Telemedia**. Two QR codes appear:
-   - **Telegram:** in the Telegram app on your phone, *Settings → Devices →
-     Link Desktop Device*, scan the code.
-   - **Stremio:** scan with the phone camera and confirm.
-3. Open Stremio, pick a movie, choose a **Telemedia** stream.
+![Setup in 5 steps: download, open, scan, automatic setup, watch](docs/setup.gif)
 
-Works with an Android phone or an iPhone for scanning.
+**You need:** an Android TV / Google TV box (Android 7+), the
+[Stremio](https://play.google.com/store/apps/details?id=com.stremio.one) app
+on it, and Telegram on your phone.
+
+1. **Download.** On the TV, install the free **Downloader** app from Google
+   Play. Open it and enter the address of the latest release:
+   `github.com/avivdan/telemedia-stremio-claude/releases/latest`.
+   Choose **`Telemedia-vX.Y.Z.apk`** (not "Source code").
+2. **Install.** Allow Downloader to install apps when Android asks (once),
+   then **Install**.
+3. **Open Telemedia.** Two QR codes appear.
+4. **Scan both with your phone:**
+   - **Telegram:** in the Telegram app, *Settings → Devices → Link Desktop
+     Device*, scan the Telegram code. If you have a two-step verification
+     password, type it on the TV. The TV then sets itself up (about a minute).
+   - **Stremio:** scan the Stremio code with the phone camera and confirm.
+5. **Watch.** Open Stremio, pick any movie or episode, choose a **Telemedia**
+   stream.
+
+Done. Telemedia starts by itself with the TV from now on. Android phone or
+iPhone both work for scanning.
+
+**Update:** install the new APK the same way. It keeps your login.
+
+Installing from a computer instead: `adb install -r Telemedia-vX.Y.Z.apk`
+(see [`tv-app/README.md`](tv-app/README.md#installing-the-apk)).
 
 ## How it works
 
