@@ -46,7 +46,8 @@ Disney+ and Apple TV+ in Israel, with Telemedia streams.
 ## Everyday use
 
 - Nothing to do: Telemedia starts with the TV.
-- The app screen shows the status: *Connected to Stremio* means all good.
+- The app screen shows the status: *Added to Stremio, nothing else to do* means all good.
+- Move between buttons with the remote: the selected one is blue with a white frame.
 - **Restart addon** fixes most hiccups.
 - **Log out of Telegram** signs the TV out. You'll get a new QR code.
 
