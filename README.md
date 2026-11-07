@@ -25,9 +25,10 @@ Watch movies and series from your Telegram channels and groups in
 on it, and Telegram on your phone.
 
 1. **Download.** On the TV, install the free **Downloader** app from Google
-   Play. Open it and enter the address of the latest release:
+   Play. Open it, and in the box that asks for a URL or code, type this
+   address (no code needed):
    `github.com/avivdan/telemedia-stremio-claude/releases/latest`.
-   Choose **`Telemedia-vX.Y.Z.apk`** (not "Source code").
+   On the page that opens, choose **`Telemedia-vX.Y.Z.apk`** (not "Source code").
 2. **Install.** Allow Downloader to install apps when Android asks (once),
    then **Install**.
 3. **Open Telemedia.** Two QR codes appear.
