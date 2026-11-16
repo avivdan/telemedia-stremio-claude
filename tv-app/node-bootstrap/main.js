@@ -26,6 +26,7 @@
 
 const fs = require('fs');
 const http = require('http');
+const net = require('net');
 const path = require('path');
 const stremioLink = require('./stremio-link');
 const setupServer = require('./setup-server');
@@ -205,7 +206,7 @@ function waitForAddon(port) {
 // Start the actual addon with config mapped to the env vars src/config.ts reads.
 // ---------------------------------------------------------------------------
 function startAddon(cfg) {
-  const port = String(cfg.port || 7000);
+  const port = String(cfg.port);
   const base = 'http://127.0.0.1:' + port;
   // Addon settings bundled at build time (catalog country, chat ids, ...).
   for (const [k, v] of Object.entries(readDefaults().env || {})) {
@@ -272,11 +273,42 @@ function startStremioPairing() {
     });
 }
 
+// The addon's port: 7000 unless another app holds it (some TVs run an AirPlay
+// receiver on 7000). Kept in config.json, because Stremio saves the addon URL
+// with the port in it.
+const DEFAULT_PORT = 7000;
+const PORT_CHOICES = [DEFAULT_PORT, 7010, 7020, 7030, 7040, 7050, 7060, 7070, 7080, 7090];
+
+function portIsFree(port) {
+  return new Promise((resolve) => {
+    const probe = net.createServer();
+    probe.once('error', () => resolve(false));
+    probe.listen(port, '127.0.0.1', () => probe.close(() => resolve(true)));
+  });
+}
+
+async function choosePort(saved) {
+  for (const port of [saved, ...PORT_CHOICES]) {
+    if (port && (await portIsFree(port))) return port;
+  }
+  throw new Error(`no free port for the addon (tried ${PORT_CHOICES.join(', ')})`);
+}
+
 async function main() {
   startControlServer();
-  startStremioPairing();
   const cfg = readConfig();
   let setupFailure = null;
+
+  // Before Stremio pairing starts: a new port means a new addon URL, so the
+  // Stremio account has to be paired again.
+  const port = await choosePort(cfg.port);
+  if (port !== cfg.port) {
+    const moved = port !== (cfg.port || DEFAULT_PORT);
+    if (moved) console.log(`[bootstrap] port ${cfg.port || DEFAULT_PORT} is taken, the addon uses ${port}`);
+    writeConfig({ ...readConfig(), port, ...(moved ? { stremioConnected: false } : {}) });
+    cfg.port = port;
+  }
+  startStremioPairing();
 
   const starter = starterLogin.unscramble(readDefaults().starter);
   if ((!cfg.apiId || !cfg.apiHash) && starter) {

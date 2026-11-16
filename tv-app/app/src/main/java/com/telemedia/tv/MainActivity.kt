@@ -258,8 +258,9 @@ class MainActivity : Activity() {
         }
         // Manual fallback stays available on the right, next to the QR code.
         stremioButton.setText(R.string.add_to_stremio)
-        stremioAction = { Stremio.openAddonsPage(this) }
-        stremioManual.text = "Or in Stremio → Add-ons → Add addon, enter\n${s.optString("manifestUrl")}"
+        val manifestUrl = s.optString("manifestUrl")
+        stremioAction = { Stremio.openAddonsPage(this, manifestUrl) }
+        stremioManual.text = "Or in Stremio → Add-ons → Add addon, enter\n$manifestUrl"
         stremioManual.visibility = View.VISIBLE
         // Kept short so the Stremio code below it fits on screen.
         return when (stremioState) {

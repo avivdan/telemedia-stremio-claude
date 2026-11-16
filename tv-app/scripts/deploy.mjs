@@ -78,7 +78,7 @@ while (Date.now() < deadline) {
   const states = [...log.matchAll(/\[bootstrap\] state=(\w+)/g)].map((m) => m[1]);
   const last = states.at(-1);
   if (last === 'running') {
-    console.log('Addon running on the TV: http://127.0.0.1:7000/manifest.json');
+    console.log('Addon running on the TV (address on the TV screen, usually http://127.0.0.1:7000/manifest.json)');
     process.exit(0);
   }
   if (last === 'error' || last === 'qr' || last === 'need_config') {

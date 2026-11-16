@@ -68,8 +68,8 @@ function errorText(err) {
 async function run({ starter, onQr, askPassword, onStep }) {
   const { TelegramClient, Api } = require('telegram');
   const { StringSession } = require('telegram/sessions');
-  const connect = async (apiId, apiHash) => {
-    const client = new TelegramClient(new StringSession(''), Number(apiId), apiHash, { connectionRetries: 5 });
+  const connect = async (apiId, apiHash, session = '') => {
+    const client = new TelegramClient(new StringSession(session), Number(apiId), apiHash, { connectionRetries: 5 });
     await client.connect();
     return client;
   };
@@ -82,7 +82,7 @@ async function run({ starter, onQr, askPassword, onStep }) {
   let lastPassword;
   const typePassword = async (hint) => (lastPassword = await askPassword(hint));
 
-  const starterClient = await connect(starter.apiId, starter.apiHash);
+  let starterClient = await connect(starter.apiId, starter.apiHash);
   let keepStarter = false;
   try {
     await starterClient.signInUserWithQrCode(
@@ -93,6 +93,12 @@ async function run({ starter, onQr, askPassword, onStep }) {
         onError,
       },
     );
+    // When the login moved to the account's home data center, this connection
+    // is left half-switched: later requests fail with AUTH_KEY_UNREGISTERED.
+    // A connection from the saved login works, as on every normal start.
+    const saved = starterClient.session.save();
+    await starterClient.destroy().catch(() => {});
+    starterClient = await connect(starter.apiId, starter.apiHash, saved);
 
     onStep('code');
     const me = await starterClient.getMe();

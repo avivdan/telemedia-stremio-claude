@@ -70,7 +70,7 @@ class NodeService : Service() {
         }
         val notification = builder
             .setContentTitle("Telemedia addon running")
-            .setContentText("http://127.0.0.1:$ADDON_PORT/manifest.json")
+            .setContentText("Serving Stremio on this device")
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(open)
             .setOngoing(true)
@@ -87,7 +87,6 @@ class NodeService : Service() {
         private const val TAG = "NodeService"
         private const val CHANNEL = "addon"
         private const val NOTIFICATION_ID = 1
-        const val ADDON_PORT = 7000
         const val CONTROL_PORT = 7001
 
         // Per-process flag; only meaningful inside the ":node" process.

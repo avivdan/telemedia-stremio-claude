@@ -32,7 +32,10 @@ starts by itself when the TV turns on.
 That's it. Open any movie or episode in Stremio and pick a **Telemedia** stream.
 
 If the Stremio code doesn't work, use **Open Stremio Add-ons** in the app:
-choose **Add addon**, enter `http://127.0.0.1:7000/manifest.json`, then **Install**.
+choose **Add addon**, enter the address the app shows (usually
+`http://127.0.0.1:7000/manifest.json`), then **Install**. On TVs where another
+app already uses port 7000 (some have a built-in AirPlay receiver there),
+Telemedia picks the next free port (7010, 7020, …) and shows that address.
 Either way it's once per Stremio account: another TV on the same account only
 needs the Telemedia app.
 
@@ -96,7 +99,7 @@ MainActivity (UI process)              NodeService (":node" process, foreground 
   status / QR / "add to Stremio"  ──▶   node-bootstrap/main.js
   polls 127.0.0.1:7001                    ├─ control server :7001 (status, 2FA password, restart)
                                           ├─ QR login → session saved in app-private config.json
-                                          └─ require(addon dist) → addon on 127.0.0.1:7000
+                                          └─ require(addon dist) → addon on 127.0.0.1:7000 (or next free port)
 BootReceiver → starts NodeService on boot
 ```
 

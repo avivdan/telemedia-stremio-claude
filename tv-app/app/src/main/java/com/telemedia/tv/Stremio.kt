@@ -12,23 +12,22 @@ import android.net.Uri
  * install links are rewritten to https:// (a local http addon can't serve
  * that) and its http intent filter only takes magnet links. The closest we
  * can get is opening Stremio directly on its Add-ons page, where the user
- * adds http://127.0.0.1:7000/manifest.json once. Stremio syncs installed
- * addons per account, so other devices on the same account need nothing.
+ * adds the addon's manifest URL (shown in the app) once. Stremio syncs
+ * installed addons per account, so other devices on the same account need
+ * nothing.
  */
 object Stremio {
     private val PACKAGES = listOf("com.stremio.one", "com.stremio.android")
-
-    // Any /addons/... route lands on Stremio's Add-ons page.
-    private const val ADDONS_PAGE =
-        "stremio:///addons/other/http%3A%2F%2F127.0.0.1%3A7000%2Fmanifest.json/telemedia"
 
     fun installedPackage(ctx: Context): String? = PACKAGES.firstOrNull {
         ctx.packageManager.getLaunchIntentForPackage(it) != null
     }
 
-    fun openAddonsPage(ctx: Context): Boolean {
+    fun openAddonsPage(ctx: Context, manifestUrl: String): Boolean {
         val pkg = installedPackage(ctx) ?: return false
-        val view = Intent(Intent.ACTION_VIEW, Uri.parse(ADDONS_PAGE))
+        // Any /addons/... route lands on Stremio's Add-ons page.
+        val page = "stremio:///addons/other/${Uri.encode(manifestUrl)}/telemedia"
+        val view = Intent(Intent.ACTION_VIEW, Uri.parse(page))
             .setPackage(pkg)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return try {
