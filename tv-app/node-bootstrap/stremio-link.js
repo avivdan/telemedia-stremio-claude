@@ -41,9 +41,9 @@ async function api(method, body) {
 // nothing needs writing (already installed with the same manifest version).
 function mergeAddonCollection(addons, transportUrl, manifest) {
   const entry = { transportUrl, transportName: '', manifest, flags: { official: false, protected: false } };
-  const idx = addons.findIndex(
-    (a) => a.transportUrl === transportUrl || (a.manifest && a.manifest.id === manifest.id),
-  );
+  // By id only: TVs on other ports use other ids (main.js addonId()), and
+  // matching their URLs too would replace their entries.
+  const idx = addons.findIndex((a) => a.manifest && a.manifest.id === manifest.id);
   if (idx === -1) return [...addons, entry];
   const cur = addons[idx];
   if (cur.transportUrl === transportUrl && cur.manifest && cur.manifest.version === manifest.version) return null;

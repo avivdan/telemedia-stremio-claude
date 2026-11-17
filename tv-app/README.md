@@ -37,7 +37,10 @@ choose **Add addon**, enter the address the app shows (usually
 app already uses port 7000 (some have a built-in AirPlay receiver there),
 Telemedia picks the next free port (7010, 7020, …) and shows that address.
 Either way it's once per Stremio account: another TV on the same account only
-needs the Telemedia app.
+needs the Telemedia app. A TV whose Telemedia uses another port (7010, …) gets
+its own Telemedia entry in the account, so it shows its Stremio code once too.
+Each TV uses only its own Telemedia; the others' entries simply stay silent
+there.
 
 **Search in Hebrew:** type a Hebrew name in Stremio's search (פאודה, האחרונים מבינינו, …).
 Results appear in the **חיפוש בעברית** rows. With a connected keyboard, type

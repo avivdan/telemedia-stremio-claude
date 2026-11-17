@@ -1,7 +1,8 @@
 // Entry point run by nodejs-mobile inside the Android TV app.
 //
 // argv[2] = absolute path to config.json in the app's private files dir.
-// config.json: { apiId, apiHash, session?, port? }
+// config.json: { apiId, apiHash, session?, port?, stremioConnected?,
+//                stremioUrl?, stremioAddonId? }
 //
 // Flow:
 //   1. Start a control server on 127.0.0.1:7001 that the Kotlin UI polls
@@ -217,6 +218,7 @@ function startAddon(cfg) {
   process.env.TELEGRAM_SESSION = cfg.session;
   process.env.ADDON_HOST = '127.0.0.1';
   process.env.ADDON_PORT = port;
+  process.env.TELEMEDIA_ADDON_ID = addonId(cfg.port);
   process.env.PUBLIC_BASE_URL = base;
   process.env.STREAM_BASE_URL = base;
   // Low-RAM TV boxes: keep the read-ahead small.
@@ -251,8 +253,21 @@ function watchStremio(addon) {
   });
 }
 
+function defaultManifestUrl(port) {
+  return `http://127.0.0.1:${port}/manifest.json`;
+}
+
+// Also remembers the URL and id Stremio knows the addon by (see main()).
 function markStremioConnected() {
-  if (!readConfig().stremioConnected) writeConfig({ ...readConfig(), stremioConnected: true });
+  const stored = readConfig();
+  if (!stored.stremioConnected) {
+    writeConfig({
+      ...stored,
+      stremioConnected: true,
+      stremioUrl: defaultManifestUrl(stored.port),
+      stremioAddonId: addonId(stored.port),
+    });
+  }
   if (status.state === 'running') setStatus({ ...status, stremioConnected: true });
 }
 
@@ -279,6 +294,14 @@ function startStremioPairing() {
 const DEFAULT_PORT = 7000;
 const PORT_CHOICES = [DEFAULT_PORT, 7010, 7020, 7030, 7040, 7050, 7060, 7070, 7080, 7090];
 
+// The addon's id in Stremio. A Stremio account holds one entry per id, and
+// TVs on the same account may use different ports: each port gets its own id,
+// so pairing one TV doesn't overwrite another TV's entry.
+const DEFAULT_ADDON_ID = 'community.telemedia';
+function addonId(port) {
+  return port === DEFAULT_PORT ? DEFAULT_ADDON_ID : `${DEFAULT_ADDON_ID}.port${port}`;
+}
+
 function portIsFree(port) {
   return new Promise((resolve) => {
     const probe = net.createServer();
@@ -303,10 +326,18 @@ async function main() {
   // Stremio account has to be paired again.
   const port = await choosePort(cfg.port);
   if (port !== cfg.port) {
-    const moved = port !== (cfg.port || DEFAULT_PORT);
-    if (moved) console.log(`[bootstrap] port ${cfg.port || DEFAULT_PORT} is taken, the addon uses ${port}`);
-    writeConfig({ ...readConfig(), port, ...(moved ? { stremioConnected: false } : {}) });
+    if (port !== (cfg.port || DEFAULT_PORT)) {
+      console.log(`[bootstrap] port ${cfg.port || DEFAULT_PORT} is taken, the addon uses ${port}`);
+    }
+    writeConfig({ ...readConfig(), port });
     cfg.port = port;
+  }
+  // Paired under another URL or id (older versions always used port 7000 and
+  // the default id): pair the Stremio account again.
+  const pairedAs = `${cfg.stremioUrl || defaultManifestUrl(DEFAULT_PORT)} ${cfg.stremioAddonId || DEFAULT_ADDON_ID}`;
+  if (cfg.stremioConnected && pairedAs !== `${defaultManifestUrl(port)} ${addonId(port)}`) {
+    console.log('[bootstrap] addon address changed, pairing Stremio again');
+    writeConfig({ ...readConfig(), stremioConnected: false });
   }
   startStremioPairing();
 

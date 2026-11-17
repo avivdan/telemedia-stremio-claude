@@ -39,7 +39,9 @@ export const HEBREW_SEARCH_CATALOG = 'telemedia-he-search';
 const ownIdPrefixes = ['tg:', 'tgchat:'];
 
 export const manifest = {
-  id: 'community.telemedia',
+  // The TV app gives an addon on a non-default port its own id, so it gets its
+  // own entry in a Stremio account shared with TVs on the default port.
+  id: process.env.TELEMEDIA_ADDON_ID || 'community.telemedia',
   version: '0.3.0',
   name: 'Telemedia',
   description:

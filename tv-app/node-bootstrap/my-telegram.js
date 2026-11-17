@@ -26,7 +26,19 @@ async function request(path, { jar, form } = {}) {
     headers['Content-Type'] = 'application/x-www-form-urlencoded';
     init.body = new URLSearchParams(form).toString();
   }
-  const res = await fetch(BASE + path, init);
+  // Network errors (Node's fetch only says "fetch failed"; the reason is in
+  // err.cause) get two more tries before giving up.
+  let res;
+  for (let attempt = 1; !res; attempt++) {
+    try {
+      res = await fetch(BASE + path, init);
+    } catch (err) {
+      const why = (err.cause && (err.cause.code || err.cause.message)) || err.message;
+      console.log(`[setup] ${path}: network error (${why}), try ${attempt} of 3`);
+      if (attempt === 3) throw new Error(`Could not reach my.telegram.org (${why})`);
+      await sleep(2000 * attempt);
+    }
+  }
   if (jar) cookiesFrom(res, jar);
   return { status: res.status, text: (await res.text()).trim() };
 }
