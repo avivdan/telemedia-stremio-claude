@@ -18,12 +18,12 @@ object ControlClient {
         null
     }
 
-    fun post(path: String, body: String): Boolean = try {
+    fun post(path: String, body: String, readTimeoutMs: Int = 2000): Boolean = try {
         val conn = URL("$base$path").openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.doOutput = true
         conn.connectTimeout = 1000
-        conn.readTimeout = 2000
+        conn.readTimeout = readTimeoutMs
         conn.outputStream.use { it.write(body.toByteArray()) }
         conn.responseCode in 200..299
     } catch (e: Exception) {

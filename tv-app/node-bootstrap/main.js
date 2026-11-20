@@ -6,7 +6,7 @@
 //
 // Flow:
 //   1. Start a control server on 127.0.0.1:7001 that the Kotlin UI polls
-//      (GET /status, POST /password, POST /exit).
+//      (GET /status, POST /password, POST /logout, POST /exit).
 //   2. No apiId/apiHash      → with a bundled starter key: QR login with it,
 //                              then fetch the user's own keys and log in
 //                              under them (starter-login.js). Otherwise, or
@@ -100,6 +100,12 @@ function startControlServer() {
       return;
     }
 
+    // "Log out of Telegram" in the UI, which restarts us afterwards.
+    if (req.method === 'POST' && req.url === '/logout') {
+      logOutOfTelegram().finally(() => send(200, { ok: true }));
+      return;
+    }
+
     // UI asks us to die; the foreground service gets restarted by the UI.
     if (req.method === 'POST' && req.url === '/exit') {
       send(200, { ok: true });
@@ -110,6 +116,33 @@ function startControlServer() {
     send(404, { error: 'not found' });
   });
   server.listen(CONTROL_PORT, '127.0.0.1');
+}
+
+// Ends the session at Telegram too (so it leaves the phone's Devices list)
+// and forgets the API keys with it: they come from that account's
+// my.telegram.org app. The next login, maybe another account, then gets its
+// own keys (automatically with a starter key, otherwise typed again).
+// Stremio settings stay.
+async function logOutOfTelegram() {
+  const cfg = readConfig();
+  if (cfg.session && cfg.apiId && cfg.apiHash) {
+    const { TelegramClient, Api } = require('telegram');
+    const { StringSession } = require('telegram/sessions');
+    const client = new TelegramClient(new StringSession(cfg.session), Number(cfg.apiId), cfg.apiHash, {
+      connectionRetries: 1,
+    });
+    const timeout = new Promise((resolve) => setTimeout(resolve, 8000));
+    try {
+      await Promise.race([client.connect().then(() => client.invoke(new Api.auth.LogOut())), timeout]);
+    } catch (err) {
+      console.log('[bootstrap] logout: ' + (err.errorMessage || err.message));
+    } finally {
+      await client.destroy().catch(() => {});
+    }
+  }
+  const { session, apiId, apiHash, ...rest } = readConfig();
+  writeConfig(rest);
+  console.log('[bootstrap] logged out of Telegram, keys forgotten');
 }
 
 // Two-step verification password, typed on the TV (POST /password).

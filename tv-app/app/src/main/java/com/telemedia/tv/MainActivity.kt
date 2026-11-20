@@ -121,8 +121,18 @@ class MainActivity : Activity() {
         logoutButton = findViewById(R.id.logout)
         restartButton.setOnClickListener { restartNode("Restarting…") }
         logoutButton.setOnClickListener {
-            AppConfig.clearSession(this)
-            restartNode("Logged out. Restarting…")
+            logoutButton.isEnabled = false
+            showNotice("Logging out…", 10_000)
+            Thread {
+                // Node ends the session at Telegram and forgets the keys. If
+                // it doesn't answer, forget them here; the session then stays
+                // in the phone's Telegram → Devices until removed there.
+                if (!ControlClient.post("/logout", "", readTimeoutMs = 15_000)) AppConfig.clearAccount(this)
+                runOnUiThread {
+                    logoutButton.isEnabled = true
+                    restartNode("Logged out. Restarting…")
+                }
+            }.start()
         }
         findViewById<Button>(R.id.send_password).setOnClickListener {
             val pw = password.text.toString()

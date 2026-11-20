@@ -43,9 +43,12 @@ object AppConfig {
         write(ctx, cfg)
     }
 
-    fun clearSession(ctx: Context) {
+    /** Log out: the session and the keys of that account's my.telegram.org app. */
+    fun clearAccount(ctx: Context) {
         val cfg = read(ctx)
         cfg.remove("session")
+        cfg.remove("apiId")
+        cfg.remove("apiHash")
         write(ctx, cfg)
     }
 }

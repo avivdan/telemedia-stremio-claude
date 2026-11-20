@@ -55,7 +55,11 @@ Disney+ and Apple TV+ in Israel, with Telemedia streams.
 - The app screen shows the status: *Added to Stremio, nothing else to do* means all good.
 - Move between buttons with the remote: the selected one is blue with a white frame.
 - **Restart addon** fixes most hiccups.
-- **Log out of Telegram** signs the TV out. You'll get a new QR code.
+- **Log out of Telegram** signs the TV out and forgets that account's API key.
+  You'll get a new QR code: scan it with any Telegram account, and the TV gets
+  that account's own key (Stremio stays connected). To move a TV to another
+  account, make sure that account has joined your channels and groups first:
+  Telemedia only finds videos in chats the account is in.
 
 ## Good to know
 

@@ -8,9 +8,9 @@
     "start": "node dist/src/index.js",
     "test": "tsc -p tsconfig.json && node --test \"dist/test/**/*.test.js\"",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "login": "ts-node scripts/login.ts",
-    "search": "ts-node scripts/search.ts",
-    "list-chat": "ts-node scripts/list-chat.ts",
+    "login": "ts-node --files scripts/login.ts",
+    "search": "ts-node --files scripts/search.ts",
+    "list-chat": "ts-node --files scripts/list-chat.ts",
     "clean": "rimraf dist"
   },
   "keywords": [
