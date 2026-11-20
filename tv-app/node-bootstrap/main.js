@@ -33,8 +33,9 @@ const stremioLink = require('./stremio-link');
 const setupServer = require('./setup-server');
 const starterLogin = require('./starter-login');
 
-const CONTROL_PORT = 7001;
-const cfgPath = process.argv[2];
+// The PC app (pc-app/) runs this file too, passing both through the environment.
+const CONTROL_PORT = Number(process.env.TELEMEDIA_CONTROL_PORT) || 7001;
+const cfgPath = process.env.TELEMEDIA_CONFIG_PATH || process.argv[2];
 
 let status = { state: 'starting' };
 let passwordResolver = null;

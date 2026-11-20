@@ -1,0 +1,62 @@
+{
+  "name": "telemedia-pc",
+  "productName": "Telemedia",
+  "version": "0.1.0",
+  "description": "Telemedia for Windows: Telegram videos in Stremio, from a tray app.",
+  "author": "Telemedia",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "bundle": "node scripts/bundle.mjs",
+    "start": "node scripts/bundle.mjs --if-missing && electron .",
+    "dist": "node scripts/bundle.mjs && electron-builder --win nsis --x64"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "community.telemedia.pc",
+    "productName": "Telemedia",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "node-staging/node",
+        "to": "node",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "node-staging/node/node_modules",
+        "to": "node/node_modules",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Telemedia",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Telemedia-Setup-${version}.${ext}"
+    }
+  }
+}

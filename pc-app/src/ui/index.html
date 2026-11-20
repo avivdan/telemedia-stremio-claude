@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'self'; script-src 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Telemedia</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-state="offline">
+  <header class="bar">
+    <span class="brand">Telemedia</span>
+    <label class="switch" id="autostart-wrap" hidden>
+      <input type="checkbox" id="autostart">
+      <span class="track" aria-hidden="true"></span>
+      Start with Windows
+    </label>
+  </header>
+
+  <main>
+    <section class="intro" aria-live="polite">
+      <h1 id="headline">Starting Telemedia</h1>
+      <p id="sub">One moment.</p>
+    </section>
+
+    <!-- Telegram ● ━━━ This PC ━━━ ● Stremio: each half lights up once connected -->
+    <section class="link" aria-hidden="true">
+      <div class="node node-telegram"><span class="dot"></span><span class="name">Telegram</span></div>
+      <div class="wire wire-telegram"><span class="fill"></span></div>
+      <div class="node node-pc"><span class="dot"></span><span class="name">This PC</span></div>
+      <div class="wire wire-stremio"><span class="fill"></span></div>
+      <div class="node node-stremio"><span class="dot"></span><span class="name">Stremio</span></div>
+    </section>
+
+    <section class="sides">
+      <div class="side side-telegram">
+        <div class="pane" data-pane="tg-qr" hidden>
+          <img class="qr" id="tg-qr" alt="Telegram login code">
+          <p class="caption">In Telegram on your phone, open Settings, then Devices, then Link Desktop Device.</p>
+        </div>
+
+        <form class="pane" data-pane="tg-password" id="password-form" hidden>
+          <label for="password">Two-step verification password</label>
+          <input type="password" id="password" autocomplete="off" required>
+          <p class="caption" id="password-hint" hidden></p>
+          <button type="submit" class="primary telegram">Send password</button>
+        </form>
+
+        <div class="pane" data-pane="tg-steps" hidden>
+          <ol class="steps">
+            <li data-step="login">Logged in</li>
+            <li data-step="code">Getting your own API key</li>
+            <li data-step="switching">Switching to your key</li>
+          </ol>
+          <p class="caption">Telegram sends a login code to your Telegram chat. Telemedia reads it for you.</p>
+        </div>
+
+        <div class="pane" data-pane="tg-setup" hidden>
+          <p class="message" id="setup-message"></p>
+          <button type="button" class="primary telegram" id="open-setup">Open setup page</button>
+          <p class="caption">It opens in your browser. Enter your phone number, then the code Telegram sends you.</p>
+        </div>
+
+        <div class="pane" data-pane="tg-wait" hidden>
+          <p class="message muted">Connecting to Telegram…</p>
+        </div>
+
+        <div class="pane" data-pane="tg-done" hidden>
+          <p class="message done">Connected</p>
+          <p class="caption">Telemedia finds videos in the channels and groups this account has joined.</p>
+        </div>
+
+        <div class="pane" data-pane="tg-error" hidden>
+          <p class="message error" id="error-message"></p>
+          <button type="button" class="primary" id="restart-error">Restart</button>
+        </div>
+      </div>
+
+      <div class="side side-stremio">
+        <div class="pane" data-pane="st-qr" hidden>
+          <img class="qr" id="st-qr" alt="Stremio pairing code">
+          <p class="caption">Scan with your phone camera and confirm. Or confirm on this PC:</p>
+          <button type="button" class="primary stremio" id="connect-stremio">Connect in browser</button>
+        </div>
+
+        <div class="pane" data-pane="st-later" hidden>
+          <p class="message muted">Next, after Telegram.</p>
+        </div>
+
+        <div class="pane" data-pane="st-installing" hidden>
+          <p class="message muted">Adding Telemedia to your Stremio account…</p>
+        </div>
+
+        <div class="pane" data-pane="st-error" hidden>
+          <p class="message error" id="stremio-error"></p>
+          <p class="caption">Telemedia tries again in a moment.</p>
+        </div>
+
+        <div class="pane" data-pane="st-done" hidden>
+          <p class="message done">Connected</p>
+          <button type="button" class="primary stremio" id="open-stremio">Open Stremio</button>
+          <p class="caption" id="get-stremio-note" hidden>Stremio isn't installed on this PC yet. The button opens its download page.</p>
+        </div>
+
+        <details class="manual" id="manual" hidden>
+          <summary>Add it by hand instead</summary>
+          <p class="caption">In Stremio, open Add-ons and paste this address in the search box.</p>
+          <div class="address">
+            <code id="manifest-url"></code>
+            <button type="button" class="quiet" id="copy-address">Copy</button>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bar">
+    <span class="version" id="version"></span>
+    <nav>
+      <button type="button" class="quiet" id="restart">Restart addon</button>
+      <button type="button" class="quiet" id="logout">Log out of Telegram</button>
+      <button type="button" class="quiet" id="open-logs">Open log</button>
+    </nav>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -14,3 +14,8 @@ package-lock.json
 *.apk
 signing.properties
 starter.properties
+
+# PC app build output
+pc-app/node-staging
+pc-app/release
+*.exe

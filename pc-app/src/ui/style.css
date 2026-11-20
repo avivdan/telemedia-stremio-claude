@@ -1,0 +1,277 @@
+/* Telemedia for Windows. Telegram's own dark navy, Telegram blue for the
+   Telegram side, Stremio purple for the Stremio side. The link strip
+   (Telegram → This PC → Stremio) is the one bold element; the rest stays quiet. */
+
+:root {
+  --ink: #0e1621;
+  --panel: #17212b;
+  --line: #253341;
+  --text: #e9eef3;
+  --muted: #8b9bab;
+  --telegram: #2aabee;
+  --stremio: #7b5bf5;
+  --error: #ef5b5b;
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--ink);
+  color: var(--text);
+  font: 15px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+main { overflow-y: auto; padding-bottom: 16px; }
+main::-webkit-scrollbar { width: 10px; }
+main::-webkit-scrollbar-thumb { background: var(--line); border-radius: 5px; border: 3px solid var(--ink); }
+
+/* Top and bottom bars ---------------------------------------------------- */
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+}
+footer.bar { border-top: 1px solid var(--line); padding-block: 10px; }
+.brand { font-weight: 600; letter-spacing: 0.01em; }
+.version { color: var(--muted); font-size: 12px; }
+footer nav { display: flex; gap: 4px; }
+
+/* Headline ------------------------------------------------------------- */
+.intro { padding: 12px 56px 0; }
+h1 {
+  margin: 0;
+  font: 600 30px/1.15 var(--font-display);
+  letter-spacing: -0.01em;
+}
+#sub { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
+
+/* The link strip ------------------------------------------------------- */
+.link {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr auto;
+  align-items: start;
+  padding: 28px 56px 6px;
+}
+.node { display: grid; justify-items: center; gap: 8px; width: 72px; }
+.node:first-child { justify-items: start; }
+.node:last-child { justify-items: end; }
+.node .name { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--ink);
+  transition: background-color 400ms, border-color 400ms;
+}
+.wire {
+  position: relative;
+  height: 2px;
+  margin-top: 7px;
+  background: var(--line);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.wire .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  transition: width 900ms cubic-bezier(0.3, 0, 0.2, 1);
+}
+.wire-telegram .fill { background: linear-gradient(90deg, var(--telegram), var(--text)); }
+.wire-stremio .fill { background: linear-gradient(90deg, var(--text), var(--stremio)); }
+
+body.tg-done .wire-telegram .fill,
+body.st-done .wire-stremio .fill { width: 100%; }
+body.tg-done .node-telegram .dot { background: var(--telegram); border-color: var(--telegram); }
+body.st-done .node-stremio .dot { background: var(--stremio); border-color: var(--stremio); }
+body.pc-on .node-pc .dot { background: var(--text); border-color: var(--text); }
+body.tg-done .node-telegram .name,
+body.st-done .node-stremio .name,
+body.pc-on .node-pc .name { color: var(--text); }
+
+/* Waiting for the user on that side: the dot breathes in its colour. */
+body.tg-active .node-telegram .dot { border-color: var(--telegram); animation: breathe-telegram 1.8s ease-in-out infinite; }
+body.st-active .node-stremio .dot { border-color: var(--stremio); animation: breathe-stremio 1.8s ease-in-out infinite; }
+@keyframes breathe-telegram {
+  50% { box-shadow: 0 0 0 7px rgb(42 171 238 / 0.18); }
+}
+@keyframes breathe-stremio {
+  50% { box-shadow: 0 0 0 7px rgb(123 91 245 / 0.2); }
+}
+
+/* The two sides, each under its end of the strip ----------------------- */
+.sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  padding: 20px 56px 0;
+}
+.side { width: min(100%, 300px); }
+.side-stremio { justify-self: end; }
+.pane { display: grid; justify-items: start; gap: 12px; }
+
+.qr {
+  display: block;
+  width: 188px;
+  height: 188px;
+  border-radius: 14px;
+  background: #fff;
+  outline: 2px solid var(--telegram);
+  outline-offset: 5px;
+}
+.side-stremio .qr { outline-color: var(--stremio); }
+
+.caption {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+  max-width: 34ch;
+}
+.message { margin: 0; font-size: 17px; }
+.message.muted { color: var(--muted); }
+.message.error { color: var(--error); font-size: 15px; max-width: 40ch; user-select: text; }
+.side-telegram .message.done { color: var(--telegram); }
+.side-stremio .message.done { color: var(--stremio); }
+.message.done::before { content: "✓ "; }
+
+/* Progress of the automatic key setup: a real sequence. */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.steps li { position: relative; padding-left: 26px; color: var(--muted); }
+.steps li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+}
+.steps li.active { color: var(--text); }
+.steps li.active::before { border-color: var(--telegram); animation: breathe-telegram 1.8s ease-in-out infinite; }
+.steps li.done { color: var(--text); }
+.steps li.done::before { background: var(--telegram); border-color: var(--telegram); }
+
+/* Controls ------------------------------------------------------------- */
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 0;
+}
+button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+.primary {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: #2b3a4a;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+.primary:hover { filter: brightness(1.1); }
+.primary.telegram { background: var(--telegram); color: var(--ink); }
+.primary.stremio { background: var(--stremio); color: #fff; }
+.quiet {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+}
+.quiet:hover { color: var(--text); background: rgb(255 255 255 / 0.05); }
+
+form label { font-weight: 600; }
+input[type="password"] {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  user-select: text;
+}
+input[type="password"]:focus { border-color: var(--telegram); outline: none; }
+
+/* Adding the addon by hand */
+.manual { margin-top: 14px; }
+.manual[open] { display: grid; gap: 8px; }
+.manual summary {
+  width: fit-content;
+  padding: 4px 0;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+.manual summary:hover { color: var(--text); }
+.manual summary:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; border-radius: 4px; }
+.address {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.address code {
+  flex: 1;
+  font: 12.5px/1.4 var(--font-mono);
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+/* Start with Windows switch */
+.switch { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch .track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--line);
+  transition: background-color 200ms;
+}
+.switch .track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: transform 200ms;
+}
+.switch input:checked + .track { background: var(--telegram); }
+.switch input:checked + .track::after { transform: translateX(14px); }
+.switch input:focus-visible + .track { outline: 2px solid var(--text); outline-offset: 3px; }
+
+/* Narrow windows: the sides stack. */
+@media (max-width: 700px) {
+  .intro, .link, .sides { padding-inline: 24px; }
+  .sides { grid-template-columns: 1fr; }
+  .side-stremio { justify-self: start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

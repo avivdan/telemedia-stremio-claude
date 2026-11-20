@@ -80,7 +80,8 @@ function run({ onStep = () => {} } = {}) {
     }
 
     server.on('error', (err) => console.error('[setup] server error', err.message));
-    server.listen(SETUP_PORT, '0.0.0.0', () => console.log('[setup] phone setup page on port ' + SETUP_PORT));
+    // The TV serves the phone on the LAN; the PC app opens it on this PC only.
+    server.listen(SETUP_PORT, process.env.TELEMEDIA_SETUP_HOST || '0.0.0.0', () => console.log('[setup] phone setup page on port ' + SETUP_PORT));
   });
 }
 

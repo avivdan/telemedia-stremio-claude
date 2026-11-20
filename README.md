@@ -1,15 +1,16 @@
 # Telemedia
 
 Watch movies and series from your Telegram channels and groups in
-[Stremio](https://www.stremio.com), on an Android TV. No computer needed.
+[Stremio](https://www.stremio.com), on an Android TV or a Windows PC.
 
 ## In short
 
 - **What it is:** an Android TV app. It adds a "Telemedia" source to Stremio:
   open any movie or episode in Stremio and Telemedia finds it in your Telegram
   chats and plays it.
-- **Where it runs:** only on the TV box. It starts with the TV and keeps
-  running in the background. Nothing runs on a PC or in the cloud.
+- **Where it runs:** on the device you watch on: the TV box (starts with the
+  TV) or a Windows PC (a tray app that starts with Windows). Nothing runs in
+  the cloud.
 - **Setup:** install the app, scan two QR codes with your phone. About two
   minutes, once.
 - **Your account stays yours:** the TV logs in to *your* Telegram, with *your*
@@ -50,6 +51,10 @@ iPhone both work for scanning.
 
 **Update:** install the new APK the same way. It keeps your login.
 
+**On a Windows PC:** run `Telemedia-Setup-X.Y.Z.exe` (shared privately, like
+the APK), then scan the same two codes in its window, or click **Connect in
+browser** for Stremio. Details in [`pc-app/README.md`](pc-app/README.md).
+
 Installing from a computer instead: `adb install -r Telemedia-vX.Y.Z.apk`
 (see [`tv-app/README.md`](tv-app/README.md#installing-the-apk)).
 
@@ -89,7 +94,8 @@ tries"), the TV shows a phone setup page instead.
 
 ## Questions
 
-- **Does my PC have to stay on?** No. The PC is only for building the app.
+- **Does my PC have to stay on?** Not for the TV: the TV app needs no PC.
+  The Windows app serves only Stremio on that PC.
 - **iPhone / iPad?** Only for scanning the codes. The app needs an Android TV
   (or Android phone/tablet): iOS can't keep a streaming server running in the
   background.
@@ -103,6 +109,7 @@ tries"), the TV shows a phone setup page instead.
 | Folder | What it is |
 |---|---|
 | [`tv-app/`](tv-app/) | The Android TV app: user guide, build and release. |
+| [`pc-app/`](pc-app/) | The Windows tray app (Electron): user guide, build. |
 | [`addon/`](addon/) | The Stremio addon (Node.js + TypeScript): Telegram search, matching files to movies and episodes, streaming. Runs inside the TV app, or standalone on a PC for development. |
 
 ```bash
@@ -113,13 +120,14 @@ npm run addon:start         # run the addon on this machine
 npm run tv:libnode          # one-time: download the Android Node.js runtime
 npm run tv:deploy -- <tv-ip>:5555   # build the TV app and install it over adb
 npm run tv:release -- X.Y.Z         # signed release APK in tv-app/release/
+npm run pc:install && npm run pc:dist   # Windows installer in pc-app/release/
 ```
 
 **Keys and secrets.** No keys are in the code. The release build reads the
 signing key and the starter key from a folder outside the repo
 (`~/Documents/telemedia-signing`), see [`tv-app/README.md`](tv-app/README.md).
-The starter key is stored scrambled in the APK, and the APK is shared
-privately, not on the Releases page. Movie and series info comes from keyless services (Cinemeta, Wikidata,
+The starter key is stored scrambled in the APK and the PC installer, and both
+are shared privately, not on the Releases page. Movie and series info comes from keyless services (Cinemeta, Wikidata,
 JustWatch).
 
 Origin: a port of the Kodi add-on `plugin.video.telemedia` 2.5.8.
