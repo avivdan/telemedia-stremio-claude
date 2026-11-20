@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Telemedia.exe: window (WebView2, the Edge engine built into Windows),
+       tray icon, and the Node part's process. .NET Framework 4.8 ships with
+       Windows 10 and 11, so nothing extra is installed. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Telemedia</AssemblyName>
+    <RootNamespace>Telemedia</RootNamespace>
+    <ApplicationIcon>..\assets\icon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>0.0.0</Version>
+    <Product>Telemedia</Product>
+    <Company>Telemedia</Company>
+    <Description>Telemedia: Telegram videos in Stremio</Description>
+    <DebugType>none</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+    <Reference Include="System.Web.Extensions" />
+    <EmbeddedResource Include="..\assets\icon.ico" LogicalName="icon.ico" />
+  </ItemGroup>
+
+</Project>

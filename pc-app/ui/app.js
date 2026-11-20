@@ -1,10 +1,77 @@
-// Renders the app's status (from main.js) into the page. The page is static:
-// render() only shows/hides panes and sets texts, so a half-typed password
-// survives every update.
-'use strict';
+// Renders Telemedia's status into the page. The page is static: render() only
+// shows/hides panes and sets texts, so a half-typed password survives every
+// update. It talks to Telemedia.exe (shell/Program.cs) through WebView2
+// messages: status comes in, actions go out. Bundled by scripts/build.mjs.
+import QRCode from 'qrcode';
 
 const $ = (id) => document.getElementById(id);
-const api = window.telemedia;
+const bridge = window.chrome && window.chrome.webview;
+const send = (action, extra = {}) => bridge && bridge.postMessage({ action, ...extra });
+
+const qrCache = new Map();
+function qrImage(text) {
+  if (!text) return null;
+  if (!qrCache.has(text)) {
+    if (qrCache.size > 20) qrCache.clear();
+    qrCache.set(text, QRCode.toDataURL(text, {
+      margin: 1, width: 440, errorCorrectionLevel: 'M', color: { dark: '#0E1621', light: '#FFFFFF' },
+    }));
+  }
+  return qrCache.get(text);
+}
+
+let latest = {};
+let updates = 0;
+let logWaiter = null;
+const api = {
+  onStatus(callback) {
+    if (!bridge) return;
+    bridge.addEventListener('message', async (e) => {
+      const m = e.data || {};
+      if (m.type === 'log') {
+        if (logWaiter) logWaiter(m.text);
+        logWaiter = null;
+        return;
+      }
+      if (m.type !== 'status') return;
+      const seq = ++updates;
+      const s = m.status || { state: 'offline' };
+      const stremio = s.stremio || { state: 'idle' };
+      const view = {
+        ...s,
+        ...m.app,
+        stremio,
+        // The page gets a picture of the login code, not the token as text.
+        telegramQr: s.state === 'qr' ? await qrImage(s.qrUrl) : null,
+        stremioQr: stremio.state === 'waiting' ? await qrImage(stremio.link) : null,
+      };
+      delete view.qrUrl;
+      if (seq !== updates) return; // a newer status arrived meanwhile
+      latest = view;
+      callback(view);
+    });
+    send('ready');
+  },
+  sendPassword: (value) => send('password', { value }),
+  restart: () => send('restart'),
+  logout: () => send('logout'),
+  connectStremio: () => send('connect-stremio', { link: latest.stremio && latest.stremio.link }),
+  openStremio: () => send('open-stremio'),
+  copyAddress: () => {
+    if (!latest.manifestUrl) return false;
+    send('copy-address', { url: latest.manifestUrl });
+    return true;
+  },
+  openSetupPage: () => send('open-setup'),
+  setAutostart: (value) => send('set-autostart', { value }),
+  openLogs: () => send('open-log'),
+  copyLog: () => send('copy-log'),
+  getLog: () => new Promise((resolve) => {
+    logWaiter = resolve;
+    send('get-log');
+    setTimeout(() => { if (logWaiter === resolve) { logWaiter = null; resolve(''); } }, 3000);
+  }),
+};
 
 const TELEGRAM_DONE = new Set(['starting_addon', 'running']);
 
@@ -206,4 +273,5 @@ $('copy-address').addEventListener('click', async () => {
   }
 });
 
+window.render = render; // for screenshots of each screen (scripts, devtools)
 api.onStatus(render);

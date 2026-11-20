@@ -16,6 +16,11 @@ signing.properties
 starter.properties
 
 # PC app build output
-pc-app/node-staging
+pc-app/stage
+pc-app/.cache
+pc-app/shell/bin
+pc-app/shell/obj
+pc-app/setup/bin
+pc-app/setup/obj
 pc-app/release
 *.exe

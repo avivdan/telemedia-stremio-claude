@@ -109,7 +109,7 @@ tries"), the TV shows a phone setup page instead.
 | Folder | What it is |
 |---|---|
 | [`tv-app/`](tv-app/) | The Android TV app: user guide, build and release. |
-| [`pc-app/`](pc-app/) | The Windows tray app (Electron): user guide, build. |
+| [`pc-app/`](pc-app/) | The Windows tray app (C# + WebView2, runs the addon on a bundled Node): user guide, build. |
 | [`addon/`](addon/) | The Stremio addon (Node.js + TypeScript): Telegram search, matching files to movies and episodes, streaming. Runs inside the TV app, or standalone on a PC for development. |
 
 ```bash
