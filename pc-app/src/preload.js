@@ -17,4 +17,6 @@ contextBridge.exposeInMainWorld('telemedia', {
   openSetupPage: () => ipcRenderer.invoke('open-setup'),
   setAutostart: (on) => ipcRenderer.invoke('set-autostart', on),
   openLogs: () => ipcRenderer.invoke('open-logs'),
+  getLog: () => ipcRenderer.invoke('get-log'),
+  copyLog: () => ipcRenderer.invoke('copy-log'),
 });

@@ -1,7 +1,7 @@
 {
   "name": "telemedia-pc",
   "productName": "Telemedia",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Telemedia for Windows: Telegram videos in Stremio, from a tray app.",
   "author": "Telemedia",
   "private": true,

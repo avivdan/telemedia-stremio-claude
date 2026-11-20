@@ -73,6 +73,7 @@
         <div class="pane" data-pane="tg-error" hidden>
           <p class="message error" id="error-message"></p>
           <button type="button" class="primary" id="restart-error">Restart</button>
+          <button type="button" class="quiet" id="error-log">Show log</button>
         </div>
       </div>
 
@@ -114,12 +115,24 @@
     </section>
   </main>
 
+  <section class="log-view" id="log-view" hidden aria-label="Log">
+    <div class="log-head">
+      <h2>Log</h2>
+      <div class="log-actions">
+        <button type="button" class="quiet" id="copy-log">Copy</button>
+        <button type="button" class="quiet" id="open-log-file">Open file</button>
+        <button type="button" class="primary" id="close-log">Back</button>
+      </div>
+    </div>
+    <pre id="log-text" tabindex="0"></pre>
+  </section>
+
   <footer class="bar">
     <span class="version" id="version"></span>
     <nav>
       <button type="button" class="quiet" id="restart">Restart addon</button>
       <button type="button" class="quiet" id="logout">Log out of Telegram</button>
-      <button type="button" class="quiet" id="open-logs">Open log</button>
+      <button type="button" class="quiet" id="show-log">Log</button>
     </nav>
   </footer>
   <script src="app.js"></script>

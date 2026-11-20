@@ -265,6 +265,36 @@ input[type="password"]:focus { border-color: var(--telegram); outline: none; }
 .switch input:checked + .track::after { transform: translateX(14px); }
 .switch input:focus-visible + .track { outline: 2px solid var(--text); outline-offset: 3px; }
 
+/* Log view: replaces the main area while open. */
+.log-view {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+  min-height: 0;
+  padding: 4px 32px 16px;
+}
+.log-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.log-head h2 { margin: 0; font: 600 20px/1.2 var(--font-display); }
+.log-actions { display: flex; align-items: center; gap: 4px; }
+.log-actions .primary { height: 34px; margin-left: 8px; }
+#log-text {
+  margin: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: #c5d0db;
+  font: 12px/1.55 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+#log-text:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+#log-text::-webkit-scrollbar { width: 10px; }
+#log-text::-webkit-scrollbar-thumb { background: var(--line); border-radius: 5px; border: 3px solid var(--panel); }
+
 /* Narrow windows: the sides stack. */
 @media (max-width: 700px) {
   .intro, .link, .sides { padding-inline: 24px; }

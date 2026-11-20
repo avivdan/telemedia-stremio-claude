@@ -22,8 +22,10 @@ const appData = app.getPath('appData');
 // Shared with the command-line addon (addon/src/userConfig.ts), so one
 // Telegram login serves both.
 const CONFIG_PATH = path.join(appData, 'telemedia', 'config.json');
-// Electron's own caches go one level down, out of the config folder.
-app.setPath('userData', path.join(appData, 'telemedia', 'app'));
+// Electron's own caches go one level down, out of the config folder. A run
+// from source gets its own folder, so it can run next to the installed app
+// (the single-instance lock goes by this folder).
+app.setPath('userData', path.join(appData, 'telemedia', app.isPackaged ? 'app' : 'app-dev'));
 const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
 const LOG_PATH = path.join(app.getPath('userData'), 'logs', 'telemedia.log');
 const NODE_DIR = app.isPackaged
@@ -83,6 +85,30 @@ function openLog() {
   const log = fs.createWriteStream(LOG_PATH, { flags: 'a' });
   log.write(`\n[app] ${new Date().toISOString()} Telemedia ${app.getVersion()} starting the addon\n`);
   return log;
+}
+
+// The end of the log file, for the log view in the window. Colour codes
+// (gramjs) are stripped; the bootstrap never logs keys or sessions.
+function logTail(maxBytes = 96 * 1024, maxLines = 400) {
+  let text = '';
+  try {
+    const fd = fs.openSync(LOG_PATH, 'r');
+    try {
+      const size = fs.fstatSync(fd).size;
+      const start = Math.max(0, size - maxBytes);
+      const buf = Buffer.alloc(size - start);
+      fs.readSync(fd, buf, 0, buf.length, start);
+      text = buf.toString('utf8');
+      if (start > 0) text = text.slice(text.indexOf('\n') + 1); // drop the cut line
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch {
+    return '';
+  }
+  // eslint-disable-next-line no-control-regex
+  const lines = text.replace(/\x1b\[[0-9;]*m/g, '').split(/\r?\n/);
+  return lines.slice(-maxLines).join('\n').trim();
 }
 
 function startNode() {
@@ -353,6 +379,8 @@ function registerIpc() {
   ipcMain.handle('open-setup', () => shell.openExternal(SETUP_PAGE));
   ipcMain.handle('set-autostart', (_e, on) => { setAutostart(on); updateStatus(status); });
   ipcMain.handle('open-logs', () => shell.openPath(LOG_PATH));
+  ipcMain.handle('get-log', () => logTail());
+  ipcMain.handle('copy-log', () => clipboard.writeText(logTail(512 * 1024, 5000)));
 }
 
 // ---------------------------------------------------------------------------

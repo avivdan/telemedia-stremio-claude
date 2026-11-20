@@ -163,7 +163,40 @@ $('open-setup').addEventListener('click', () => api.openSetupPage());
 $('restart').addEventListener('click', () => api.restart());
 $('restart-error').addEventListener('click', () => api.restart());
 $('logout').addEventListener('click', () => api.logout());
-$('open-logs').addEventListener('click', () => api.openLogs());
+// Log view: the end of the log file, refreshed while open.
+let logTimer = null;
+async function refreshLog(scrollToEnd) {
+  const pre = $('log-text');
+  const atEnd = scrollToEnd || pre.scrollHeight - pre.scrollTop - pre.clientHeight < 40;
+  const text = (await api.getLog()) || 'Nothing logged yet.';
+  if (text !== pre.textContent) pre.textContent = text;
+  if (atEnd) pre.scrollTop = pre.scrollHeight;
+}
+function showLog(open) {
+  document.querySelector('main').hidden = open;
+  $('log-view').hidden = !open;
+  $('show-log').hidden = open;
+  clearInterval(logTimer);
+  if (open) {
+    refreshLog(true);
+    logTimer = setInterval(() => refreshLog(false), 1500);
+    $('close-log').focus();
+  } else {
+    $('show-log').focus();
+  }
+}
+$('show-log').addEventListener('click', () => showLog(true));
+$('error-log').addEventListener('click', () => showLog(true));
+$('close-log').addEventListener('click', () => showLog(false));
+$('open-log-file').addEventListener('click', () => api.openLogs());
+$('copy-log').addEventListener('click', async () => {
+  await api.copyLog();
+  $('copy-log').textContent = 'Copied';
+  setTimeout(() => { $('copy-log').textContent = 'Copy'; }, 1500);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('log-view').hidden) showLog(false);
+});
 $('autostart').addEventListener('change', (e) => api.setAutostart(e.target.checked));
 $('copy-address').addEventListener('click', async () => {
   const button = $('copy-address');
