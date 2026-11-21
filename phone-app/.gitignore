@@ -1,0 +1,20 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+app/.cxx/
+app/libnode/
+node-staging/
+release/
+node_modules/
+.claude/
+
+# Secrets live outside the repo (~/Documents/telemedia-signing); these rules
+# only catch copies dropped in here by mistake.
+*.jks
+*.keystore
+*.apk
+signing.properties
+starter.properties
+groups.txt

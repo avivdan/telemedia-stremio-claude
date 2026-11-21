@@ -1,0 +1,13 @@
+{
+  "name": "telemedia-phone",
+  "private": true,
+  "description": "Telemedia for Android phones: runs the Telemedia Stremio addon (from ../telemedia-stremio-claude/addon) on the phone itself.",
+  "scripts": {
+    "libnode": "node scripts/fetch-libnode.mjs",
+    "bundle": "node scripts/bundle-node.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "release": "node scripts/release.mjs",
+    "my-groups": "node scripts/my-groups.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  }
+}

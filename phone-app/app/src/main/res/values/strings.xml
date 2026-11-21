@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texts: short, plain sentences, one per line (\n), so they're easy to read. -->
+<resources>
+    <string name="app_name">Telemedia</string>
+    <string name="tagline">Your Telegram videos in Stremio.</string>
+    <string name="please_wait">Please wait…</string>
+
+    <string name="starting">Starting…</string>
+    <string name="logging_in">Logging in…</string>
+    <string name="starting_addon">Starting Telemedia…</string>
+    <string name="waiting_network">Waiting for internet…\nTelemedia keeps trying.</string>
+
+    <!-- Step 1: Telegram -->
+    <string name="login_title">1 · Log in to Telegram</string>
+    <string name="login_intro">Log in with your Telegram account.\nThe login stays on this phone.\nType your phone number.\nTelegram will send you a code.</string>
+    <string name="phone_hint">Phone number, like +972 50 123 4567</string>
+    <string name="send_code">Send code</string>
+    <string name="code_sent_app">Telegram sent you a code.\nFind it in the Telegram app, in the chat “Telegram”.\nType it here:</string>
+    <string name="code_sent_sms">Telegram sent you a code by SMS.\nType it here:</string>
+    <string name="code_hint">Code</string>
+    <string name="log_in">Log in</string>
+
+    <string name="password_title">Telegram password</string>
+    <string name="password_intro">Your Telegram account has a password.\nType it here.</string>
+    <string name="password_hint">Password</string>
+    <string name="password_wrong">Wrong password.\nTry again.</string>
+    <string name="continue_button">Continue</string>
+
+    <string name="auto_setup_working">Logged in ✔\n\nNow Telemedia gets its own Telegram key.\nThis takes about a minute.\nTelegram will send a code to your “Telegram” chat.\nYou don\'t need to do anything with it.</string>
+    <string name="auto_setup_switching">Almost done…</string>
+
+    <!-- Fallback: own key by hand -->
+    <string name="config_title">Get your Telegram key</string>
+    <string name="config_intro">Telemedia needs a key from Telegram.\nType your phone number.\nTelegram will send a code to your Telegram app.</string>
+    <string name="config_code_sent">Telegram sent you a code.\nFind it in the chat “Telegram”, in the message “Web login code”.\nType it here:</string>
+    <string name="config_code_hint">Code (letters and numbers)</string>
+    <string name="config_working">Getting your key from Telegram…</string>
+    <string name="config_manual">I already have an api_id and api_hash</string>
+    <string name="api_id_hint">api_id (numbers)</string>
+    <string name="api_hash_hint">api_hash (32 letters and numbers)</string>
+    <string name="save">Save</string>
+
+    <!-- Step 2: groups -->
+    <string name="groups_title">2 · Groups to start with</string>
+    <string name="groups_intro">Telemedia finds videos in your Telegram groups and channels.\nJoin some to get videos right away.\nYou can leave them anytime.</string>
+    <string name="groups_loading">Loading groups…</string>
+    <string name="groups_join">Join selected</string>
+    <string name="groups_skip">Skip</string>
+    <string name="groups_joining">Joining…</string>
+    <string name="groups_show">Suggested groups</string>
+
+    <!-- Step 3: Stremio -->
+    <string name="stremio_title">3 · Add to Stremio</string>
+    <string name="stremio_intro">A Stremio web page will open.\nLog in there with the same Stremio account as on this phone.\nConfirm, then come back here.</string>
+    <string name="stremio_added">Added to your Stremio account ✔\nNow open Stremio on this phone.\nDon\'t see Telemedia there?\nThen Stremio on this phone uses another account.\nTap Add to Stremio again and log in with that account.</string>
+    <string name="stremio_add_again">Add to Stremio again</string>
+    <string name="stremio_add">Add to Stremio</string>
+    <string name="stremio_waiting">Waiting for you to confirm on the Stremio page…</string>
+    <string name="stremio_installing">Adding Telemedia to Stremio…</string>
+    <string name="get_stremio">Get Stremio</string>
+    <string name="no_browser">No web browser found.</string>
+
+    <!-- Done -->
+    <string name="done_title">All set ✔</string>
+    <string name="done_text">Open Stremio.\nPick a movie or an episode.\nChoose a Telemedia stream.\n\nTelemedia runs in the background.\nIt starts by itself when the phone turns on.</string>
+    <string name="done_no_stremio">Install Stremio to watch.</string>
+    <string name="open_stremio">Open Stremio</string>
+
+    <!-- Other devices: this phone as a server for any TV -->
+    <string name="lan_title">Watch on a TV or computer</string>
+    <string name="lan_intro">A TV or computer on the same Wi-Fi can play from this phone.\nTap Connect a user.\nLog in to that user\'s Stremio account and confirm.\nOr the user scans the code with their own phone.\nDone with that user?\nFind their account at the bottom.\nTap Remove from Stremio account under it.</string>
+    <string name="lan_qr_description">QR code</string>
+    <string name="lan_add">Connect a user</string>
+    <string name="lan_copy">Copy address</string>
+    <string name="lan_copied">Address copied</string>
+    <string name="lan_scan_caption">User: scan this with your phone.\nThen confirm in your Stremio account.</string>
+    <string name="lan_address_caption">Or type this address in that user\'s Stremio, under Add-ons:</string>
+    <string name="lan_accounts_title">Connected Stremio accounts</string>
+    <string name="lan_remove">Remove</string>
+    <string name="lan_remove_main">Remove from Stremio account</string>
+    <string name="lan_add_another">Connect another user</string>
+    <string name="lan_remove_confirm">Remove Telemedia from %1$s?\nThe phone gets a new key.\nThat user can\'t use it anymore.\nYour other users get the new key by themselves.</string>
+    <string name="lan_removed">Removed ✔\nThe old address doesn\'t work anymore.</string>
+    <string name="lan_connected">Connected to %1$s ✔\nThat user\'s Stremio now shows Telemedia.\nKeep the phone on this Wi-Fi while you watch.\nCharging is best.</string>
+    <string name="lan_tls_waiting">Smart TVs (Hisense, LG, Samsung) need a secure address.\nIt isn\'t ready yet.\nTelemedia keeps trying.\nAndroid TV and computers work now.</string>
+    <string name="lan_tls_blocked">This router blocks the secure address.\nSo smart TVs (Hisense, LG, Samsung) can\'t use it here.\nAndroid TV and computers work.</string>
+    <string name="lan_no_wifi">Connect the phone to Wi-Fi to watch on a TV.</string>
+    <string name="lan_reconnect">Stremio disconnected an account marked ⚠.\nTap Connect another user and log in to it again.\nOr tap Remove from Stremio account under it.</string>
+
+    <string name="battery_text">Let Telemedia run in the background.\nThen videos don\'t stop while you watch.</string>
+    <string name="battery_allow">Allow</string>
+
+    <string name="restart">Restart</string>
+    <string name="stop">Stop Telemedia</string>
+    <string name="stop_confirm">Stop Telemedia?\nStremio on this phone and on your TVs can\'t play from it.\nIt stays stopped, even after the phone restarts.\nTap Start Telemedia to turn it back on.</string>
+    <string name="stopped_title">Telemedia is stopped</string>
+    <string name="stopped_text">Nothing runs in the background.\nStremio on this phone and on your TVs can\'t play from it.\nTap Start Telemedia to turn it back on.</string>
+    <string name="start">Start Telemedia</string>
+    <string name="logout">Log out of Telegram</string>
+    <string name="log_out_short">Log out</string>
+    <string name="account_logged_in">Logged in to Telegram as %1$s.</string>
+    <string name="account_logged_in_plain">Logged in to Telegram.</string>
+    <string name="logout_confirm">Log this phone out of Telegram?\nTelemedia also leaves the connected Stremio accounts.\nSo the next person who logs in doesn\'t get them.</string>
+
+    <string name="notification_channel">Telemedia</string>
+    <string name="notification_title">Telemedia is running</string>
+    <string name="notification_text">Sends your Telegram videos to Stremio</string>
+    <string name="notification_stop">Stop</string>
+</resources>
