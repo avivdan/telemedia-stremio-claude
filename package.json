@@ -1,7 +1,7 @@
 {
   "name": "telemedia",
   "private": true,
-  "description": "Telemedia: Stremio addon streaming from Telegram (addon/), the Android TV app that runs it on the TV (tv-app/) and the Windows tray app (pc-app/).",
+  "description": "Telemedia: Stremio addon streaming from Telegram (addon/), the Android TV app that runs it on the TV (tv-app/), the Android phone app (phone-app/) and the Windows tray app (pc-app/).",
   "scripts": {
     "addon:install": "npm --prefix addon install",
     "addon:build": "npm --prefix addon run build",
@@ -12,6 +12,10 @@
     "tv:bundle": "node tv-app/scripts/bundle-node.mjs",
     "tv:deploy": "node tv-app/scripts/deploy.mjs",
     "tv:release": "node tv-app/scripts/release.mjs",
+    "phone:libnode": "npm --prefix phone-app run libnode",
+    "phone:test": "npm --prefix phone-app test",
+    "phone:deploy": "npm --prefix phone-app run deploy --",
+    "phone:release": "npm --prefix phone-app run release --",
     "pc:install": "npm --prefix pc-app install",
     "pc:start": "npm --prefix pc-app start",
     "pc:dist": "npm --prefix pc-app run dist"

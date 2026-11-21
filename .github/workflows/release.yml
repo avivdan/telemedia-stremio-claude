@@ -1,8 +1,7 @@
 # Builds the signed Android TV APK into a DRAFT GitHub Release (private until
-# published by hand). With a starter key inside, share the APK privately
-# instead of publishing it.
-# Trigger: push a tag like v0.3.0
-# (Alternative without CI: `npm run tv:release -- 0.3.0` on the machine that
+# published by hand).
+# Trigger: by hand (Actions tab), on a tag like v0.3.0
+# (Usual way, without CI: `npm run tv:release -- 0.3.0` on the machine that
 # holds the signing key, then attach the APK to a release by hand.)
 #
 # Repository secrets:

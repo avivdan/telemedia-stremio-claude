@@ -8,7 +8,7 @@
 // (head-start groups), see bundle-node.mjs.
 //
 // Output: release/Telemedia-Phone-v<version>.apk (signature verified).
-// With a starter key inside, share the APK privately.
+// Attach it to a GitHub release tagged phone-v<version>.
 
 import { execSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, readdirSync } from 'node:fs';

@@ -12,7 +12,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const groups = require('../node-bootstrap/groups.js');
 const login = require('../node-bootstrap/login.js');
-const tvBootstrap = join(here, '..', '..', 'telemedia-stremio-claude', 'tv-app', 'node-bootstrap');
+const tvBootstrap = join(here, '..', '..', 'tv-app', 'node-bootstrap');
 
 test('group links: usernames', () => {
   for (const s of ['@Some_Channel', 't.me/Some_Channel', 'https://t.me/Some_Channel/', 'tg://resolve?domain=Some_Channel']) {

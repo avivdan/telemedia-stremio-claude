@@ -14,8 +14,9 @@ again. No computer and no cloud.
 
 ## Setup (about 2 minutes, once)
 
-1. **Install the app.** The APK (`Telemedia-Phone-vX.Y.Z.apk`) is shared
-   privately: ask whoever gave you Telemedia. Open it on the phone; Android
+1. **Install the app.** Download `Telemedia-Phone-vX.Y.Z.apk` from the
+   [Releases page](https://github.com/avivdan/telemedia-stremio-claude/releases)
+   on the phone and open it. Android
    asks once to allow installing apps from that app (Files, Chrome, …): allow,
    then **Install**.
 2. **Open Telemedia** and allow notifications (it shows that it is running).
@@ -196,13 +197,14 @@ shows each request from other devices (key removed).
 
 The app embeds Node.js ([nodejs-mobile](https://github.com/nodejs-mobile/nodejs-mobile),
 Node 18) and runs the Telemedia addon on the phone, like the TV app does. The
-addon is not copied here: the build compiles it from the TV project, so there
-is one addon codebase.
+addon is not copied here: the build compiles it from the repo's `addon/`, so
+there is one addon codebase.
 
 ```
-proj/
-  telemedia-stremio-claude/   addon/ (the Stremio addon) and tv-app/ (TV app)
-  telemedia-phone/            this repo
+telemedia-stremio-claude/
+  addon/       the Stremio addon
+  tv-app/      TV app (its node-bootstrap helpers are reused here)
+  phone-app/   this app
 ```
 
 ```
@@ -345,7 +347,7 @@ or `TELEMEDIA_SIGNING_DIR`), all optional except for releases:
 | File | What |
 |---|---|
 | `signing.properties` + keystore | Release signing (same key as the TV app). `deploy` uses it too, so deploys and releases can replace each other. |
-| `starter.properties` | `apiId=…`, `apiHash=…`: the starter key, stored scrambled in `defaults.json`. Share an APK with it privately. |
+| `starter.properties` | `apiId=…`, `apiHash=…`: the starter key, stored scrambled in `defaults.json`. |
 | `groups.txt` | Head-start groups: one `t.me/name`, `@name` or invite link (`t.me/+…`) per line, optional ` \| note`. Or `TELEMEDIA_GROUPS`. No groups are built in. |
 
 Addon settings (`CATALOG_COUNTRY`, `TG_HEBREW_GROUP`, …) come from the
@@ -358,5 +360,5 @@ Notes:
 - nodejs-mobile has no full ICU, so addon code must not use regex `\p{…}` or
   `String.prototype.normalize`. `lru-cache` is pinned to v10 (v11 needs Node 20+).
 - The TV helpers (`my-telegram.js`, `stremio-link.js`, `starter-login.js`)
-  are copied from `../telemedia-stremio-claude/tv-app/node-bootstrap` at
+  are copied from `../tv-app/node-bootstrap` at
   build time; `bundle-node.mjs` checks they still export what the phone uses.

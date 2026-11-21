@@ -2,10 +2,10 @@
 //
 // Run:  npm run bundle
 //
-// The addon is NOT copied into this repo: it is compiled from the TV
-// project's addon (one addon codebase), and the TV app's Telegram/Stremio
-// setup helpers are reused as they are.
-//   TELEMEDIA_ADDON_DIR  default ../telemedia-stremio-claude/addon
+// The addon is NOT copied into this folder: it is compiled from the repo's
+// addon/ (one addon codebase), and the TV app's Telegram/Stremio setup
+// helpers are reused as they are.
+//   TELEMEDIA_ADDON_DIR  default ../addon
 //   (the TV helpers come from <addon dir>/../tv-app/node-bootstrap)
 //
 // Output: node-staging/nodejs-project/
@@ -27,7 +27,7 @@ import { readProperties, scramble, signingDir } from './toolchain.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
 const require = createRequire(import.meta.url);
-const addonRoot = resolve(process.env.TELEMEDIA_ADDON_DIR || join(root, '..', 'telemedia-stremio-claude', 'addon'));
+const addonRoot = resolve(process.env.TELEMEDIA_ADDON_DIR || join(root, '..', 'addon'));
 const tvBootstrap = join(addonRoot, '..', 'tv-app', 'node-bootstrap');
 const TV_FILES = ['my-telegram.js', 'stremio-link.js', 'starter-login.js'];
 const stage = join(root, 'node-staging', 'nodejs-project');
@@ -39,7 +39,7 @@ const run = (cmd, cwd) => {
 };
 
 if (!existsSync(join(addonRoot, 'package.json'))) {
-  throw new Error(`Addon not found at ${addonRoot}. Clone telemedia-stremio-claude next to this repo, or set TELEMEDIA_ADDON_DIR.`);
+  throw new Error(`Addon not found at ${addonRoot}. Expected the repo's addon/ next to phone-app/, or set TELEMEDIA_ADDON_DIR.`);
 }
 for (const f of TV_FILES) {
   if (!existsSync(join(tvBootstrap, f))) throw new Error(`TV app helper missing: ${join(tvBootstrap, f)}`);

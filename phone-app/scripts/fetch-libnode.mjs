@@ -20,7 +20,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const dest = join(here, '..', 'app', 'libnode');
 const zipPath = join(here, '..', 'node-staging', name);
 // The TV app downloads the same file: reuse it if it's there.
-const tvZip = join(here, '..', '..', 'telemedia-stremio-claude', 'tv-app', 'node-staging', name);
+const tvZip = join(here, '..', '..', 'tv-app', 'node-staging', name);
 
 mkdirSync(dirname(zipPath), { recursive: true });
 

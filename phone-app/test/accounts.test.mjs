@@ -13,7 +13,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 // stremio-account.js loads the TV app's stremio-link.js from ./tv/ (copied
 // there by the bundle); point that at the TV project for the tests.
-const tvBootstrap = join(here, '..', '..', 'telemedia-stremio-claude', 'tv-app', 'node-bootstrap');
+const tvBootstrap = join(here, '..', '..', 'tv-app', 'node-bootstrap');
 const Module = require('node:module');
 const resolve = Module._resolveFilename;
 Module._resolveFilename = function (request, ...rest) {

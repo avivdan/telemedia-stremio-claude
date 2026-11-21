@@ -1,23 +1,35 @@
 # Telemedia
 
 Watch movies and series from your Telegram channels and groups in
-[Stremio](https://www.stremio.com), on an Android TV or a Windows PC.
+[Stremio](https://www.stremio.com), on an Android TV, an Android phone or a
+Windows PC.
 
 ## In short
 
-- **What it is:** an Android TV app. It adds a "Telemedia" source to Stremio:
-  open any movie or episode in Stremio and Telemedia finds it in your Telegram
-  chats and plays it.
-- **Where it runs:** on the device you watch on: the TV box (starts with the
-  TV) or a Windows PC (a tray app that starts with Windows). Nothing runs in
-  the cloud.
-- **Setup:** install the app, scan two QR codes with your phone. About two
+- **What it is:** an app that adds a "Telemedia" source to Stremio: open any
+  movie or episode in Stremio and Telemedia finds it in your Telegram chats
+  and plays it.
+- **Where it runs:** on your own device. Nothing runs in the cloud.
+- **Setup:** install the app, log in to Telegram, connect Stremio. About two
   minutes, once.
-- **Your account stays yours:** the TV logs in to *your* Telegram, with *your*
-  own Telegram API key (it gets that by itself). Nothing goes anywhere except
-  Telegram and Stremio.
+- **Your account stays yours:** the app logs in to *your* Telegram, with
+  *your* own Telegram API key (it gets that by itself). Nothing goes anywhere
+  except Telegram and Stremio.
 
-## Download and use
+## Download
+
+All apps are on the
+[Releases page](https://github.com/avivdan/telemedia-stremio-claude/releases).
+
+| App | File | For | Guide |
+|---|---|---|---|
+| Android TV | `Telemedia-vX.Y.Z.apk` | Android TV / Google TV box (Android 7+) | below, and [`tv-app/`](tv-app/README.md) |
+| Android phone | `Telemedia-Phone-vX.Y.Z.apk` | Android phone (Android 7+). Can also serve TVs and computers on your Wi-Fi. | [`phone-app/`](phone-app/README.md) |
+| Windows PC | `Telemedia-Setup-X.Y.Z.exe` | Windows 10/11 tray app | [`pc-app/`](pc-app/README.md) |
+
+To update, install the new file over the old one. It keeps your login.
+
+## Android TV: setup
 
 ![Setup in 5 steps: download, open, scan, automatic setup, watch](docs/setup.gif)
 
@@ -25,8 +37,8 @@ Watch movies and series from your Telegram channels and groups in
 [Stremio](https://play.google.com/store/apps/details?id=com.stremio.one) app
 on it, and Telegram on your phone.
 
-1. **Get the app.** The APK (`Telemedia-vX.Y.Z.apk`) is shared privately:
-   ask whoever gave you Telemedia. It is not on the Releases page.
+1. **Get the app:** `Telemedia-vX.Y.Z.apk` from the
+   [Releases page](https://github.com/avivdan/telemedia-stremio-claude/releases).
 2. **Put it on the TV and install**, whichever is easiest:
    - **From your phone:** install the free **Send Files to TV** app on the
      phone and on the TV, send the APK, then open it on the TV.
@@ -51,9 +63,13 @@ iPhone both work for scanning.
 
 **Update:** install the new APK the same way. It keeps your login.
 
-**On a Windows PC:** run `Telemedia-Setup-X.Y.Z.exe` (shared privately, like
-the APK), then scan the same two codes in its window, or click **Connect in
-browser** for Stremio. Details in [`pc-app/README.md`](pc-app/README.md).
+**On a Windows PC:** run `Telemedia-Setup-X.Y.Z.exe`, then scan the same two
+codes in its window, or click **Connect in browser** for Stremio. Details in
+[`pc-app/README.md`](pc-app/README.md).
+
+**On an Android phone:** install `Telemedia-Phone-vX.Y.Z.apk`, log in with
+your phone number, tap **Add to Stremio**. Details in
+[`phone-app/README.md`](phone-app/README.md).
 
 Installing from a computer instead: `adb install -r Telemedia-vX.Y.Z.apk`
 (see [`tv-app/README.md`](tv-app/README.md#installing-the-apk)).
@@ -96,9 +112,9 @@ tries"), the TV shows a phone setup page instead.
 
 - **Does my PC have to stay on?** Not for the TV: the TV app needs no PC.
   The Windows app serves only Stremio on that PC.
-- **iPhone / iPad?** Only for scanning the codes. The app needs an Android TV
-  (or Android phone/tablet): iOS can't keep a streaming server running in the
-  background.
+- **iPhone / iPad?** Only for scanning the codes. The app needs an Android TV,
+  Android phone or Windows PC: iOS can't keep a streaming server running in
+  the background.
 - **Can others on my Wi-Fi use my Telegram through it?** No. The addon only
   answers on the TV itself (`127.0.0.1`).
 - **How do I sign the TV out?** *Log out of Telegram* in the app, or on your
@@ -109,6 +125,7 @@ tries"), the TV shows a phone setup page instead.
 | Folder | What it is |
 |---|---|
 | [`tv-app/`](tv-app/) | The Android TV app: user guide, build and release. |
+| [`phone-app/`](phone-app/) | The Android phone app: runs the addon on the phone and serves Stremio on other devices on the Wi-Fi. User guide, testing checklist, build. |
 | [`pc-app/`](pc-app/) | The Windows tray app (C# + WebView2, runs the addon on a bundled Node): user guide, build. |
 | [`addon/`](addon/) | The Stremio addon (Node.js + TypeScript): Telegram search, matching files to movies and episodes, streaming. Runs inside the TV app, or standalone on a PC for development. |
 
@@ -120,14 +137,21 @@ npm run addon:start         # run the addon on this machine
 npm run tv:libnode          # one-time: download the Android Node.js runtime
 npm run tv:deploy -- <tv-ip>:5555   # build the TV app and install it over adb
 npm run tv:release -- X.Y.Z         # signed release APK in tv-app/release/
+npm run phone:libnode               # one-time: Node.js runtime for the phone app
+npm run phone:test                  # phone app unit tests
+npm run phone:deploy -- <phone-ip>:<port>   # build the phone app and install it over adb
+npm run phone:release -- X.Y.Z      # signed release APK in phone-app/release/
 npm run pc:install && npm run pc:dist   # Windows installer in pc-app/release/
 ```
+
+**Releases.** Build locally, then attach the file to a new release on GitHub
+by hand. One release per app, tagged `vX.Y.Z` (TV), `phone-vX.Y.Z` and
+`pc-vX.Y.Z`.
 
 **Keys and secrets.** No keys are in the code. The release build reads the
 signing key and the starter key from a folder outside the repo
 (`~/Documents/telemedia-signing`), see [`tv-app/README.md`](tv-app/README.md).
-The starter key is stored scrambled in the APK and the PC installer, and both
-are shared privately, not on the Releases page. Movie and series info comes from keyless services (Cinemeta, Wikidata,
-JustWatch).
+The starter key is stored scrambled in the APKs and the PC installer. Movie
+and series info comes from keyless services (Cinemeta, Wikidata, JustWatch).
 
 Origin: a port of the Kodi add-on `plugin.video.telemedia` 2.5.8.
