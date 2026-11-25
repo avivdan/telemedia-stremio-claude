@@ -314,6 +314,12 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, what: string): P
 type SenderOf<C> = C extends { getSender(dc: number): Promise<infer S> } ? S : never;
 type Sender = SenderOf<TelegramClient>;
 
+// Telegram file references expire after a few hours. gramjs turns these 400s
+// into BadRequestError with errorMessage "BAD_REQUEST", so match the text.
+export function isFileReferenceError(err: unknown): boolean {
+  return err instanceof Error && /FILE_REFERENCE_(EXPIRED|INVALID)/.test(err.message);
+}
+
 async function connectToDc(client: TelegramClient, dcId: number, fresh: boolean): Promise<Sender> {
   const borrow = fresh
     ? (client as unknown as { _borrowExportedSender(dc: number, reconnect: boolean): Promise<Sender> })
@@ -345,8 +351,25 @@ export async function* iterDownload(
   // one that dropped.
   let fresh = false;
 
+  // The message may come from the search cache with an old file reference.
+  // On expiry, fetch it again once (shared by all blocks in flight).
+  let refreshing: Promise<void> | null = null;
+  const refreshReference = (): Promise<void> => {
+    refreshing ??= (async () => {
+      const latest = await fetchMessage(String(getPeerId(msg.peerId)), msg.id, true);
+      const latestDoc = (latest.media as Api.MessageMediaDocument | undefined)?.document;
+      if (!(latestDoc instanceof Api.Document)) throw new Error('video is no longer on Telegram');
+      location.fileReference = latestDoc.fileReference;
+      doc.fileReference = latestDoc.fileReference; // for later reads of this message
+      log.info('stream: file reference refreshed');
+    })().finally(() => { refreshing = null; });
+    return refreshing;
+  };
+
   const fetchBlock = async (offset: number): Promise<Buffer> => {
+    let refreshes = 0;
     for (let attempt = 0; ; attempt++) {
+      const reference = location.fileReference;
       try {
         const reconnect = fresh;
         fresh = false;
@@ -366,6 +389,10 @@ export async function* iterDownload(
           dcId = err.newDc;
         } else if (err instanceof errors.FloodWaitError) {
           await sleep(err.seconds * 1000);
+        } else if (isFileReferenceError(err) && refreshes < 2) {
+          refreshes++;
+          // Another block may already have swapped in a new reference.
+          if (location.fileReference === reference) await refreshReference();
         } else if (attempt < 3) {
           if (err instanceof TimeoutError) fresh = true;
           log.warn(`stream: ${(err as Error).message}, retrying`);
