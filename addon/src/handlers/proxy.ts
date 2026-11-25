@@ -117,7 +117,12 @@ export async function handleStream(
       if (aborted) break;
       const canContinue = res.write(chunk);
       if (!canContinue) {
-        await new Promise<void>((resolve) => res.once('drain', resolve));
+        // 'drain' never comes once the player hangs up: wait for either.
+        await new Promise<void>((resolve) => {
+          const done = () => { res.off('drain', done); res.off('close', done); resolve(); };
+          res.once('drain', done);
+          res.once('close', done);
+        });
       }
     }
   } catch (err) {

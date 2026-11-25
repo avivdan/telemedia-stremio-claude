@@ -46,6 +46,9 @@ export const config = {
     // upload.getFile requests kept in flight per stream. More than ~2 on one
     // connection triggers Telegram throttling (bursty, often slower overall).
     parallel: num('STREAM_PARALLEL', 2),
+    // A Telegram connection that stops answering is replaced after these.
+    connectTimeoutMs: num('STREAM_CONNECT_TIMEOUT_S', 20) * 1000,
+    requestTimeoutMs: num('STREAM_REQUEST_TIMEOUT_S', 30) * 1000,
   },
   cache: {
     ttlSeconds: num('CACHE_TTL_SECONDS', 900),

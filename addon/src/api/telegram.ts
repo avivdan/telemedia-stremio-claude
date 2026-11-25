@@ -298,6 +298,30 @@ function requestSizeFor(bytes: number): number {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export class TimeoutError extends Error {}
+
+export function withTimeout<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new TimeoutError(`${what}: no answer in ${ms / 1000} s`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+// gramjs keeps one connection per data center and never gives up on one that
+// hangs (seen: auth.exportAuthorization stuck, then the video stalls forever).
+// Borrowing with shouldReconnect replaces the cached connection with a new one.
+type SenderOf<C> = C extends { getSender(dc: number): Promise<infer S> } ? S : never;
+type Sender = SenderOf<TelegramClient>;
+
+async function connectToDc(client: TelegramClient, dcId: number, fresh: boolean): Promise<Sender> {
+  const borrow = fresh
+    ? (client as unknown as { _borrowExportedSender(dc: number, reconnect: boolean): Promise<Sender> })
+        ._borrowExportedSender(dcId, true)
+    : client.getSender(dcId);
+  return withTimeout(borrow, config.streaming.connectTimeoutMs, `connecting to data center ${dcId}`);
+}
+
 export async function* iterDownload(
   media: TgMediaRef,
   msg: Api.Message,
@@ -315,23 +339,36 @@ export async function* iterDownload(
     thumbSize: '',
   });
   const reqSize = requestSizeFor(chunkBytes);
-  let sender = await client.getSender(media.dcId ?? doc.dcId);
+  let dcId = media.dcId ?? doc.dcId;
+  // Borrowed again for every request: gramjs disconnects a borrowed sender
+  // 30 s after the borrow, mid-stream or not, and a borrow also reconnects
+  // one that dropped.
+  let fresh = false;
 
   const fetchBlock = async (offset: number): Promise<Buffer> => {
     for (let attempt = 0; ; attempt++) {
       try {
-        const res = await client.invokeWithSender(
-          new Api.upload.GetFile({ location, offset: bigInt(offset), limit: reqSize }),
-          sender,
+        const reconnect = fresh;
+        fresh = false;
+        const sender = await connectToDc(client, dcId, reconnect);
+        const res = await withTimeout(
+          client.invokeWithSender(
+            new Api.upload.GetFile({ location, offset: bigInt(offset), limit: reqSize }),
+            sender,
+          ),
+          config.streaming.requestTimeoutMs,
+          `video block at ${offset}`,
         );
         if (!(res instanceof Api.upload.File)) throw new Error('CDN redirect not supported');
         return Buffer.from(res.bytes);
       } catch (err) {
         if (err instanceof errors.FileMigrateError) {
-          sender = await client.getSender(err.newDc);
+          dcId = err.newDc;
         } else if (err instanceof errors.FloodWaitError) {
           await sleep(err.seconds * 1000);
-        } else if (attempt < 2) {
+        } else if (attempt < 3) {
+          if (err instanceof TimeoutError) fresh = true;
+          log.warn(`stream: ${(err as Error).message}, retrying`);
           await sleep(500 * (attempt + 1));
         } else {
           throw err;
